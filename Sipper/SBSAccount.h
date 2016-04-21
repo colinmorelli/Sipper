@@ -126,9 +126,11 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 /**
  * Starts the account and registers with the endpoint
  *
- * No delegate methods will be invoked until the start method is called. Additionally, until start is
- * called, you cannot make or receive calls. The create method *must* be called before start, and will
- * be called automatiaclly if registering through Sipper
+ * The SBSAccount instance must be initialized using the createWithError method before it can be started. This
+ * is automatically handled for you when using the convenience methods on SBSEndpoint (highly recommended).
+ *
+ * Note that accounts will not be registered with the SIP provider until the start method is called. This gives you
+ * an opportunity to attach delegates to the SBSAccount and avoid race conditions
  */
 - (void)start;
 
