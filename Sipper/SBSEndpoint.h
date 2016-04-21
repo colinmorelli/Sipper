@@ -6,44 +6,44 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
+#ifndef SBSEndpoint_h
+#define SBSEndpoint_h
+
 #import <Foundation/Foundation.h>
 
-#ifndef SipperEndpoint_h
-#define SipperEndpoint_h
-
-#import "SipperAccount.h"
-#import "SipperAccountConfiguration.h"
-#import "SipperEndpointConfiguration.h"
+@class SBSAccount;
+@class SBSAccountConfiguration;
+@class SBSEndpointConfiguration;
 
 /**
  *  Possible errors the Endpoint can return.
  */
-typedef NS_ENUM(NSInteger, SipperEndpointError) {
+typedef NS_ENUM(NSInteger, SBSEndpointError) {
   /**
    *  Unable to create the pjsip library.
    */
-  SipperEndpointErrorCannotCreate,
+  SBSEndpointErrorCannotCreate,
   /**
    *  Unable to initialize the pjsip library.
    */
-  SipperEndpointErrorCannotInitialize,
+  SBSEndpointErrorCannotInitialize,
   /**
    *  Unable to add transport configuration to endpoint.
    */
-  SipperEndpointErrorCannotAddTransportConfiguration,
+  SBSEndpointErrorCannotAddTransportConfiguration,
   /**
    *  Unable to start the pjsip library.
    */
-  SipperEndpointErrorCannotStart,
+  SBSEndpointErrorCannotStart,
   /**
    *  Unable to create the thread for pjsip.
    */
-  SipperEndpointErrorCannotCreateThread
+  SBSEndpointErrorCannotCreateThread
 };
 
-@interface SipperEndpoint : NSObject
+@interface SBSEndpoint : NSObject
 
-@property (strong, nonatomic, readonly) SipperEndpointConfiguration *configuration;
+@property (strong, nonatomic, readonly) SBSEndpointConfiguration *configuration;
 
 /**
  * Creates an instance of the Sipper wrapper with the requested endpoint configuration
@@ -53,7 +53,7 @@ typedef NS_ENUM(NSInteger, SipperEndpointError) {
  *
  * @param configuration the configuration to use when creating the endpoint
  */
-- (instancetype)initWithEndpointConfiguration:(SipperEndpointConfiguration *)configuration;
+- (instancetype)initWithEndpointConfiguration:(SBSEndpointConfiguration *)configuration;
 
 /**
  * Initializes the SIP endpoint
@@ -89,7 +89,7 @@ typedef NS_ENUM(NSInteger, SipperEndpointError) {
  * @param error         pointer to an error
  * @return a created account instance, if successful
  */
-- (SipperAccount *)createAccountWithConfiguration:(SipperAccountConfiguration *)configuration error:(NSError **)error;
+- (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError **)error;
 
 @end
 

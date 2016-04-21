@@ -6,24 +6,27 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
+#ifndef SBSTransportConfiguration_h
+#define SBSTransportConfiguration_h
+
 #import <Foundation/Foundation.h>
 
 /**
  *  The available transports to configure.
  */
-typedef NS_ENUM(NSUInteger, SipperTransportType) {
-  SipperTransportTypeUDP,
-  SipperTransportTypeTCP,
-  SipperTransportTypeUDP6,
-  SipperTransportTypeTCP6
+typedef NS_ENUM(NSUInteger, SBSTransportType) {
+  SBSTransportTypeUDP,
+  SBSTransportTypeTCP,
+  SBSTransportTypeUDP6,
+  SBSTransportTypeTCP6
 };
 
-@interface SipperTransportConfiguration : NSObject
+@interface SBSTransportConfiguration : NSObject
 
 /**
  *  The transport type that should be used.
  */
-@property (nonatomic) SipperTransportType transportType;
+@property (nonatomic) SBSTransportType transportType;
 
 /**
  *  The port on which the communication should be set up.
@@ -36,12 +39,14 @@ typedef NS_ENUM(NSUInteger, SipperTransportType) {
 @property (nonatomic) NSUInteger portRange;
 
 /**
- *  This function will init a VSLTransportConfiguration with default settings
+ *  This function will init a SBSTransportConfiguration with default settings
  *
  *  @param transportType Transport type that will be set.
  *
- *  @return VSLTransportConfiguration instance.
+ *  @return SBSTransportConfiguration instance.
  */
-+ (instancetype)configurationWithTransportType:(SipperTransportType)transportType;
++ (instancetype)configurationWithTransportType:(SBSTransportType)transportType;
 
 @end
+
+#endif

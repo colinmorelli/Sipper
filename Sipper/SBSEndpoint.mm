@@ -6,15 +6,16 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
-#import "Sipperendpoint.h"
+#import "SBSEndpoint.h"
+
 #import <pjsua2/endpoint.hpp>
 
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
 
-#import "SipperAccount.h"
-#import "SipperEndpointConfiguration.h"
-#import "SipperTransportConfiguration.h"
+#import "SBSAccount.h"
+#import "SBSEndpointConfiguration.h"
+#import "SBSTransportConfiguration.h"
 
 static NSString * const EndpointErrorDomain = @"sipper.endpoint.error";
 
@@ -23,11 +24,11 @@ static NSString * const EndpointErrorDomain = @"sipper.endpoint.error";
 //
 typedef void (^RegistrationStateHandler)(int x, int y);
 
-class SipperEndpointWrapper : public pj::Endpoint
+class SBSEndpointWrapper : public pj::Endpoint
 {
 public:
-  SipperEndpointWrapper() {}
-  ~SipperEndpointWrapper() {}
+  SBSEndpointWrapper() {}
+  ~SBSEndpointWrapper() {}
   
 };
 
@@ -35,16 +36,16 @@ public:
 // MARK: Implementation
 //
 
-@interface SipperEndpoint ()
+@interface SBSEndpoint ()
 
-@property (nonatomic) SipperEndpointWrapper *endpoint;
+@property (nonatomic) SBSEndpointWrapper *endpoint;
 @property (strong, nonatomic) NSMutableDictionary *accounts;
 
 @end
 
-@implementation SipperEndpoint
+@implementation SBSEndpoint
 
-- (instancetype)initWithEndpointConfiguration:(SipperEndpointConfiguration *)configuration {
+- (instancetype)initWithEndpointConfiguration:(SBSEndpointConfiguration *)configuration {
   if (self = [super init]) {
     _configuration = configuration;
     _accounts = [[NSMutableDictionary alloc] init];
@@ -60,17 +61,17 @@ public:
   
   // Create the PJSUA endpoint here and load the required libraries
   try {
-    self.endpoint = new SipperEndpointWrapper;
+    self.endpoint = new SBSEndpointWrapper;
     self.endpoint->libCreate();
   } catch (pj::Error &err) {
     delete self.endpoint;
     self.endpoint = nil;
-    NSLog(@"in create");
+
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not create endpoint", nil)
               localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                               errorDomain:EndpointErrorDomain
-                                errorCode:SipperEndpointErrorCannotCreate];
+                                errorCode:SBSEndpointErrorCannotCreate];
     return NO;
   }
   
@@ -78,30 +79,26 @@ public:
   try {
     self.endpoint->libInit([self convertEndpointConfiguration:self.configuration]);
   } catch (pj::Error& err) {
-    NSLog(@"in init");
     [self destroyEndpointWithError:nil];
-    NSLog(@"in init - after destroy");
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not initialize endpoint", nil)
               localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                               errorDomain:EndpointErrorDomain
-                                errorCode:SipperEndpointErrorCannotInitialize];
+                                errorCode:SBSEndpointErrorCannotInitialize];
     return NO;
   }
   
   // Now, register all of the requested transports with the endpoint
-  for (SipperTransportConfiguration *transportConfiguration in self.configuration.transportConfigurations) {
+  for (SBSTransportConfiguration *transportConfiguration in self.configuration.transportConfigurations) {
     try {
       self.endpoint->transportCreate([self convertTransportType:transportConfiguration.transportType], [self convertTransportConfiguration:transportConfiguration]);
     } catch (pj::Error& err) {
-      NSLog(@"in create transport");
       [self destroyEndpointWithError:nil];
-      NSLog(@"in create transport - after destroy");
       *error = [NSError ErrorWithUnderlying:nil
                     localizedDescriptionKey:NSLocalizedString(@"Could not create transport", nil)
                 localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                                 errorDomain:EndpointErrorDomain
-                                  errorCode:SipperEndpointErrorCannotAddTransportConfiguration];
+                                  errorCode:SBSEndpointErrorCannotAddTransportConfiguration];
       return NO;
     }
   }
@@ -110,14 +107,12 @@ public:
   try {
     self.endpoint->libStart();
   } catch (pj::Error& err) {
-    NSLog(@"in start");
     [self destroyEndpointWithError:nil];
-    NSLog(@"in start after destroy");
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not start endpoint", nil)
               localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                               errorDomain:EndpointErrorDomain
-                                errorCode:SipperEndpointErrorCannotStart];
+                                errorCode:SBSEndpointErrorCannotStart];
     return NO;
   }
   
@@ -137,9 +132,9 @@ public:
   return YES;
 }
 
-- (SipperAccount *)createAccountWithConfiguration:(SipperAccountConfiguration *)configuration error:(NSError *__autoreleasing *)error {
+- (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError *__autoreleasing *)error {
   NSString *identifier = [[NSUUID UUID] UUIDString];
-  SipperAccount *account = [[SipperAccount alloc] initWithIdentifier:identifier configuration:configuration endpoint:self];
+  SBSAccount *account = [[SBSAccount alloc] initWithIdentifier:identifier configuration:configuration endpoint:self];
   
   // Attempt to create the account here
   if (![account createWithError:error]) {
@@ -150,7 +145,7 @@ public:
   return self.accounts[identifier] = account;
 }
 
-- (pj::EpConfig)convertEndpointConfiguration:(SipperEndpointConfiguration *)configuration {
+- (pj::EpConfig)convertEndpointConfiguration:(SBSEndpointConfiguration *)configuration {
   pj::EpConfig config = pj::EpConfig();
   config.logConfig.level        = (int) configuration.logLevel;
   config.logConfig.consoleLevel = (int) configuration.logConsoleLevel;
@@ -168,22 +163,22 @@ public:
   return config;
 }
 
-- (pj::TransportConfig)convertTransportConfiguration:(SipperTransportConfiguration *)configuration {
+- (pj::TransportConfig)convertTransportConfiguration:(SBSTransportConfiguration *)configuration {
   pj::TransportConfig config = pj::TransportConfig();
   config.port      = (int) configuration.port;
   config.portRange = (int) configuration.portRange;
   return config;
 }
 
-- (pjsip_transport_type_e)convertTransportType:(SipperTransportType)type {
+- (pjsip_transport_type_e)convertTransportType:(SBSTransportType)type {
   switch (type) {
-    case SipperTransportTypeTCP:
+    case SBSTransportTypeTCP:
       return PJSIP_TRANSPORT_TCP;
-    case SipperTransportTypeUDP:
+    case SBSTransportTypeUDP:
       return PJSIP_TRANSPORT_UDP;
-    case SipperTransportTypeTCP6:
+    case SBSTransportTypeTCP6:
       return PJSIP_TRANSPORT_TCP6;
-    case SipperTransportTypeUDP6:
+    case SBSTransportTypeUDP6:
       return PJSIP_TRANSPORT_UDP6;
   }
 }

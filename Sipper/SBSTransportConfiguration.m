@@ -17,7 +17,7 @@ static NSInteger const TransportConfigurationPortRange = 0;
   if (self = [super init]) {
     self.port = TransportConfigurationPort;
     self.portRange = TransportConfigurationPortRange;
-    self.transportType = SipperTransportTypeTCP;
+    self.transportType = SBSTransportTypeTCP;
   }
   return self;
 }

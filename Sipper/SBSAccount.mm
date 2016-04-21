@@ -6,15 +6,16 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
+#import "SBSAccount.h"
+
 #import <Foundation/Foundation.h>
 #import <pjsua2/account.hpp>
 #import <pjsua2/call.hpp>
 
 #import "NSError+SipperError.h"
 
-#import "Sipper.h"
-#import "SipperAccount.h"
-#import "SipperEndpointConfiguration.h"
+#import "SBSEndpoint.h"
+#import "SBSEndpointConfiguration.h"
 
 static NSString * const AccountErrorDomain = @"sipper.account.error";
 
@@ -23,11 +24,11 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 //
 typedef void (^RegistrationStateHandler)(bool registered, int code);
 
-class SipperAccountWrapper : public pj::Account
+class SBSAccountWrapper : public pj::Account
 {
 public:
-  SipperAccountWrapper() {}
-  ~SipperAccountWrapper() {}
+  SBSAccountWrapper() {}
+  ~SBSAccountWrapper() {}
   
   RegistrationStateHandler onRegistrationStateChange;
   
@@ -53,16 +54,16 @@ public:
   
 };
 
-@interface SipperAccount ()
+@interface SBSAccount ()
 
-@property (nonatomic) SipperEndpoint *endpoint;
-@property (nonatomic) SipperAccountWrapper *account;
+@property (nonatomic) SBSEndpoint *endpoint;
+@property (nonatomic) SBSAccountWrapper *account;
 
 @end
 
-@implementation SipperAccount
+@implementation SBSAccount
 
-- (instancetype)initWithIdentifier:(NSString *)identifier configuration:(SipperAccountConfiguration *)configuration endpoint:(SipperEndpoint *)endpoint {
+- (instancetype)initWithIdentifier:(NSString *)identifier configuration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint {
   if (self = [super init]) {
     _endpoint = endpoint;
     _id = identifier;
@@ -82,7 +83,7 @@ public:
                           localizedDescriptionKey:NSLocalizedString(@"Could not register account", nil)
                       localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                                       errorDomain:AccountErrorDomain
-                                        errorCode:SipperAccountErrorCannotRegister];
+                                        errorCode:SBSAccountErrorCannotRegister];
 
     [self.delegate account:self registrationDidFailWithError:error];
   }
@@ -91,7 +92,7 @@ public:
 - (BOOL)createWithError:(NSError *__autoreleasing *)error {
   
   // Convert the account configuration
-  self.account = new SipperAccountWrapper;
+  self.account = new SBSAccountWrapper;
   
   try {
     self.account->create([self convertAccountConfiguration:self.configuration]);
@@ -100,18 +101,18 @@ public:
                   localizedDescriptionKey:NSLocalizedString(@"Could not create account", nil)
               localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
                               errorDomain:AccountErrorDomain
-                                errorCode:SipperAccountErrorCannotCreate];
+                                errorCode:SBSAccountErrorCannotCreate];
     return NO;
   }
   
   // Register event handlers with the registration state manager, and invoke the delegate method
   self.account->onRegistrationStateChange = ^(bool active, int code) {
     if (PJSIP_IS_STATUS_IN_CLASS(code, 100) || PJSIP_IS_STATUS_IN_CLASS(code, 300)) {
-      [self.delegate account:self registrationDidChangeState:SipperAccountRegistrationStateTrying withStatusCode:code];
+      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateTrying withStatusCode:code];
     } else if (PJSIP_IS_STATUS_IN_CLASS(code, 200)) {
-      [self.delegate account:self registrationDidChangeState:SipperAccountRegistrationStateActive withStatusCode:code];
+      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateActive withStatusCode:code];
     } else {
-      [self.delegate account:self registrationDidChangeState:SipperAccountRegistrationStateInactive withStatusCode:code];
+      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateInactive withStatusCode:code];
     }
   };
   
@@ -122,7 +123,7 @@ public:
 // MARK: Converters
 //
 
-- (pj::AccountConfig)convertAccountConfiguration:(SipperAccountConfiguration *)configuration {
+- (pj::AccountConfig)convertAccountConfiguration:(SBSAccountConfiguration *)configuration {
   NSString *tcp = @"";
   if ([self.endpoint.configuration hasTCPConfiguration]) {
     tcp = @";transport=tcp";
@@ -131,7 +132,7 @@ public:
   // Create defaults for some of our variables
   NSString *registrarUri = self.configuration.sipRegistrarServer, *proxyUri = self.configuration.sipProxyServer;
   if (proxyUri == nil) {
-    proxyUri = self.configuration.sipDomain;
+    proxyUri = [@"sip:" stringByAppendingString:self.configuration.sipDomain];
   }
   
   if (registrarUri == nil) {
@@ -145,23 +146,29 @@ public:
   config.regConfig.timeoutSec       = 800;
   config.regConfig.retryIntervalSec = (int) self.configuration.sipRegistrationRetryTimeout;
   config.presConfig.publishEnabled  = self.configuration.sipPublishEnabled;
-  config.sipConfig.proxies.push_back([proxyUri stringByAppendingString:tcp].UTF8String);
-  config.sipConfig.authCreds.push_back(
-    pj::AuthCredInfo(
-      std::string([self convertAuthenticationScheme:self.configuration.sipAuthScheme].UTF8String),
-      std::string(self.configuration.sipAuthRealm.UTF8String),
-      std::string(self.configuration.sipAccount.UTF8String),
-      0,
-      std::string(self.configuration.sipPassword.UTF8String)
-    )
-  );
+  
+  if (proxyUri != nil) {
+    config.sipConfig.proxies.push_back([proxyUri stringByAppendingString:tcp].UTF8String);
+  }
+  
+  if (self.configuration.sipAccount != nil) {
+    config.sipConfig.authCreds.push_back(
+      pj::AuthCredInfo(
+        std::string([self convertAuthenticationScheme:self.configuration.sipAuthScheme].UTF8String),
+        std::string(self.configuration.sipAuthRealm.UTF8String),
+        std::string(self.configuration.sipAccount.UTF8String),
+        0,
+        std::string(self.configuration.sipPassword.UTF8String)
+      )
+    );
+  }
   
   return config;
 }
 
-- (NSString *)convertAuthenticationScheme:(SipperAuthenticationScheme)scheme {
+- (NSString *)convertAuthenticationScheme:(SBSAuthenticationScheme)scheme {
   switch (self.configuration.sipAuthScheme) {
-    case SipperAuthenticationSchemeDigest:
+    case SBSAuthenticationSchemeDigest:
       return @"digest";
   }
   

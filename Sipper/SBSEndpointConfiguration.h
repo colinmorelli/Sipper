@@ -6,9 +6,12 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
+#ifndef SBSEndpointConfiguration_h
+#define SBSEndpointConfiguration_h
+
 #import <Foundation/Foundation.h>
 
-@interface SipperEndpointConfiguration : NSObject
+@interface SBSEndpointConfiguration : NSObject
 
 /**
  *  Maximum calls to support.
@@ -82,3 +85,5 @@
 -(BOOL)hasTCPConfiguration;
 
 @end
+
+#endif

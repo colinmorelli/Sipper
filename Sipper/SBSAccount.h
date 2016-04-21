@@ -6,47 +6,47 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
-#ifndef SipperAccount_h
-#define SipperAccount_h
+#ifndef SBSAccount_h
+#define SBSAccount_h
 
-#import "SipperAccountConfiguration.h"
+#import "SBSAccountConfiguration.h"
+
+@class SBSAccount;
+@class SBSEndpoint;
 
 /**
  *  Different registration states for the account
  */
-typedef NS_ENUM(NSInteger, SipperAccountRegistrationState) {
+typedef NS_ENUM(NSInteger, SBSAccountRegistrationState) {
   /**
    *  Account has an active registration with the server
    */
-  SipperAccountRegistrationStateActive,
+  SBSAccountRegistrationStateActive,
   /**
    *  Account is currently attempting to register with the server
    */
-  SipperAccountRegistrationStateTrying,
+  SBSAccountRegistrationStateTrying,
   /**
    *  Account does not have an active registration with the server
    */
-  SipperAccountRegistrationStateInactive
+  SBSAccountRegistrationStateInactive
 };
 
 /**
  *  Possible errors the account can return.
  */
-typedef NS_ENUM(NSInteger, SipperAccountError) {
+typedef NS_ENUM(NSInteger, SBSAccountError) {
   /**
    *  Unable to create the underlying account
    */
-  SipperAccountErrorCannotCreate,
+  SBSAccountErrorCannotCreate,
   /**
    *  Unable to start the account registration
    */
-  SipperAccountErrorCannotRegister
+  SBSAccountErrorCannotRegister
 };
 
-@class SipperEndpoint;
-@class SipperAccount;
-
-@protocol SipperAccountDelegate
+@protocol SBSAccountDelegate
 
 /**
  * Invoked when the registration status of the sip account changes
@@ -58,7 +58,7 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
  * @param state   the new state of the account
  * @param code    the status code of the registration
  */
-- (void)account:(SipperAccount * _Nonnull)account registrationDidChangeState:(SipperAccountRegistrationState)state withStatusCode:(int)code;
+- (void)account:(SBSAccount * _Nonnull)account registrationDidChangeState:(SBSAccountRegistrationState)state withStatusCode:(int)code;
 
 /**
  * Invoked when registration fails with an error
@@ -70,11 +70,11 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
  * @param account the account that the failure is in relation to
  * @param error   the error that occurred
  */
-- (void)account:(SipperAccount * _Nonnull)account registrationDidFailWithError:(NSError * _Nonnull)error;
+- (void)account:(SBSAccount * _Nonnull)account registrationDidFailWithError:(NSError * _Nonnull)error;
 
 @end
 
-@interface SipperAccount : NSObject
+@interface SBSAccount : NSObject
 
 /**
  * Unique identifier for this account
@@ -90,7 +90,7 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
  * Note that this property is readonly. While the configuration object itself has mutable properties,
  * they *will not* be respected until the account is restarted
  */
-@property (readonly, strong, nonatomic, nonnull) SipperAccountConfiguration *configuration;
+@property (readonly, strong, nonatomic, nonnull) SBSAccountConfiguration *configuration;
 
 /**
  * Delegate to receive events for the account
@@ -98,7 +98,7 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
  * The delegate will be invoked to match state changes to the underlying account, including information
  * about new incoming calls. You probably want to set this.
  */
-@property (weak, nonatomic, nullable) id<SipperAccountDelegate> delegate;
+@property (weak, nonatomic, nullable) id<SBSAccountDelegate> delegate;
 
 /**
  * Creates a new account with the requested account configuration
@@ -110,7 +110,7 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
  * @param id            unique identifier for this account
  * @param configuration the account configuration to use when creating the account
  */
-- (instancetype _Nonnull)initWithIdentifier:(NSString * _Nonnull)identifier configuration:(SipperAccountConfiguration * _Nonnull)configuration endpoint:(SipperEndpoint * _Nullable)endpoint;
+- (instancetype _Nonnull)initWithIdentifier:(NSString * _Nonnull)identifier configuration:(SBSAccountConfiguration * _Nonnull)configuration endpoint:(SBSEndpoint * _Nullable)endpoint;
 
 /**
  * Attempts to construct the underlying account
@@ -134,4 +134,4 @@ typedef NS_ENUM(NSInteger, SipperAccountError) {
 
 @end
 
-#endif /* SipperAccount_h */
+#endif /* SBSAccount_h */

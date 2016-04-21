@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
-@interface Sipper : NSObject
-
-@end
+#import "SBSAccount.h"
+#import "SBSAccountConfiguration.h"
+#import "SBSEndpoint.h"
+#import "SBSEndpointConfiguration.h"
+#import "SBSTransportConfiguration.h"

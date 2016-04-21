@@ -6,13 +6,16 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
+#ifndef SBSAccountConfiguration_h
+#define SBSAccountConfiguration_h
+
 #import <Foundation/Foundation.h>
 
-typedef NS_ENUM(NSInteger, SipperAuthenticationScheme) {
-  SipperAuthenticationSchemeDigest
+typedef NS_ENUM(NSInteger, SBSAuthenticationScheme) {
+  SBSAuthenticationSchemeDigest
 };
 
-@interface SipperAccountConfiguration : NSObject
+@interface SBSAccountConfiguration : NSObject
 
 /**
  *  The account that should be used when authenticate on remote PBX.
@@ -56,7 +59,7 @@ typedef NS_ENUM(NSInteger, SipperAuthenticationScheme) {
  *
  *  Default: digest
  */
-@property (nonatomic) SipperAuthenticationScheme sipAuthScheme;
+@property (nonatomic) SBSAuthenticationScheme sipAuthScheme;
 
 /**
  *  Sets the duration to wait when registration fails. Set to 0 to disable.
@@ -71,3 +74,5 @@ typedef NS_ENUM(NSInteger, SipperAuthenticationScheme) {
 @property (nonatomic) BOOL sipPublishEnabled;
 
 @end
+
+#endif

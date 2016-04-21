@@ -6,14 +6,14 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
-#import "SipperAccountConfiguration.h"
+#import "SBSAccountConfiguration.h"
 
-@implementation SipperAccountConfiguration
+@implementation SBSAccountConfiguration
 
 - (instancetype) init {
   if (self = [super init]) {
     self.sipAuthRealm = @"*";
-    self.sipAuthScheme = SipperAuthenticationSchemeDigest;
+    self.sipAuthScheme = SBSAuthenticationSchemeDigest;
     self.sipRegistrationRetryTimeout = 500;
   }
   
