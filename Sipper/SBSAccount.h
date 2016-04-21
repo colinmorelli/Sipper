@@ -12,6 +12,7 @@
 #import "SBSAccountConfiguration.h"
 
 @class SBSAccount;
+@class SBSCall;
 @class SBSEndpoint;
 
 /**
@@ -47,6 +48,17 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 };
 
 @protocol SBSAccountDelegate
+
+/**
+ * Invoked when a new call is received
+ *
+ * The call provided in this method can be answered using the [call answer] method. By default, if this delegate is left
+ * unimplemented the call will ring until it times out
+ *
+ * @param account  the account that the incomign call came in for
+ * @param call     information about the incoming call
+ */
+- (void)account:(SBSAccount * _Nonnull)account didReceiveIncomingCall:(SBSCall * _Nonnull)call;
 
 /**
  * Invoked when the registration status of the sip account changes

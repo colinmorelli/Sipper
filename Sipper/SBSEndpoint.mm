@@ -126,9 +126,25 @@ public:
   }
   
   // Make sure we release the underlying PJSIP library
-  self.endpoint->libDestroy();
+  try {
+    self.endpoint->libDestroy();
+  } catch (pj::Error& err) {
+    *error = [NSError ErrorWithUnderlying:nil
+                  localizedDescriptionKey:NSLocalizedString(@"Could not shutdown endpoint", nil)
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), err.status]
+                              errorDomain:EndpointErrorDomain
+                                errorCode:SBSEndpointErrorCannotDestroy];
+  }
+  
+  // Not much else we can do here, so we just have to clean up
   delete self.endpoint;
   self.endpoint = nil;
+  
+  // Handle the appropriate response status
+  if (error != nil) {
+    return NO;
+  }
+  
   return YES;
 }
 
@@ -144,6 +160,19 @@ public:
   // Successful creation, register the account with sipper
   return self.accounts[identifier] = account;
 }
+
+- (void)dealloc {
+  NSError *error;
+  
+  // Attempt to gracefully shutdown if we haven't already
+  if (![self destroyEndpointWithError:&error]) {
+    NSLog(@"WARN: Failed to cleanly tear down SIP client - you should *always* call destroyEndpointWithError before letting the instance be released");
+  }
+}
+
+//
+// MARK: Private Methods
+//
 
 - (pj::EpConfig)convertEndpointConfiguration:(SBSEndpointConfiguration *)configuration {
   pj::EpConfig config = pj::EpConfig();

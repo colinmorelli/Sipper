@@ -38,7 +38,11 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
   /**
    *  Unable to create the thread for pjsip.
    */
-  SBSEndpointErrorCannotCreateThread
+  SBSEndpointErrorCannotCreateThread,
+  /**
+   *  Unable to cleanly destroy the endpoint on shutdown.
+   */
+  SBSEndpointErrorCannotDestroy
 };
 
 @interface SBSEndpoint : NSObject

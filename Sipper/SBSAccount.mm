@@ -14,15 +14,19 @@
 
 #import "NSError+SipperError.h"
 
+#import "SBSCall.h"
+#import "SBSCall+Internal.hpp"
 #import "SBSEndpoint.h"
 #import "SBSEndpointConfiguration.h"
 
 static NSString * const AccountErrorDomain = @"sipper.account.error";
 
+typedef void (^RegistrationStateHandler)(bool registered, int code);
+typedef void (^IncomingCallHandler)(pj::OnIncomingCallParam param);
+
 //
 // MARK: PJSIP Subclass
 //
-typedef void (^RegistrationStateHandler)(bool registered, int code);
 
 class SBSAccountWrapper : public pj::Account
 {
@@ -30,7 +34,8 @@ public:
   SBSAccountWrapper() {}
   ~SBSAccountWrapper() {}
   
-  RegistrationStateHandler onRegistrationStateChange;
+  RegistrationStateHandler onRegistrationStateChangeHandler;
+  IncomingCallHandler onIncomingCallHandler;
   
   virtual void onRegState(pj::OnRegStateParam &prm)
   {
@@ -39,17 +44,18 @@ public:
     pjsip_status_code code = info.regStatus;
 
     // Invoke the registration state change handler
-    if (onRegistrationStateChange != NULL) {
-      onRegistrationStateChange(registered, code);
+    if (onRegistrationStateChangeHandler != NULL) {
+      onRegistrationStateChangeHandler(registered, code);
     }
   }
   
   virtual void onIncomingCall(pj::OnIncomingCallParam &iprm)
   {
-    pj::Call *call = new pj::Call(*this, iprm.callId);
-    pj::CallOpParam prm;
-    prm.statusCode = PJSIP_SC_OK;
-    call->answer(prm);
+    
+    // Invoke the incoming call handler if one is registered
+    if (onIncomingCallHandler != NULL) {
+      onIncomingCallHandler(iprm);
+    }
   }
   
 };
@@ -106,14 +112,25 @@ public:
   }
   
   // Register event handlers with the registration state manager, and invoke the delegate method
-  self.account->onRegistrationStateChange = ^(bool active, int code) {
-    if (PJSIP_IS_STATUS_IN_CLASS(code, 100) || PJSIP_IS_STATUS_IN_CLASS(code, 300)) {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateTrying withStatusCode:code];
-    } else if (PJSIP_IS_STATUS_IN_CLASS(code, 200)) {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateActive withStatusCode:code];
-    } else {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateInactive withStatusCode:code];
-    }
+  self.account->onRegistrationStateChangeHandler = ^(bool active, int code) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (PJSIP_IS_STATUS_IN_CLASS(code, 100) || PJSIP_IS_STATUS_IN_CLASS(code, 300)) {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateTrying withStatusCode:code];
+      } else if (PJSIP_IS_STATUS_IN_CLASS(code, 200)) {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateActive withStatusCode:code];
+      } else {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateInactive withStatusCode:code];
+      }
+    });
+  };
+  
+  // And, an event handler for incoming calls
+  self.account->onIncomingCallHandler = ^(pj::OnIncomingCallParam param) {
+    SBSCall *call = [SBSCall incomingCallWithAccount:self underlying:self.account incomingCallData:param];
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [self.delegate account:self didReceiveIncomingCall:call];
+    });
   };
   
   return YES;
