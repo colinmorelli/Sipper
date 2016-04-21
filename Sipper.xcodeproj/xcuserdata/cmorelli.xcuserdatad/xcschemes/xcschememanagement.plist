@@ -9,9 +9,19 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>SipperUniversal.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>E75BEFAF1CC8076600300FAD</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>E78E57001CC7B50900FDA80D</key>
 		<dict>
 			<key>primary</key>

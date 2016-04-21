@@ -6,10 +6,42 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		E75BEFAF1CC8076600300FAD /* SipperUniversal */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = E75BEFB21CC8076600300FAD /* Build configuration list for PBXAggregateTarget "SipperUniversal" */;
+			buildPhases = (
+				E75BEFB61CC8083400300FAD /* ShellScript */,
+			);
+			dependencies = (
+				E75BEFB41CC8076B00300FAD /* PBXTargetDependency */,
+			);
+			name = SipperUniversal;
+			productName = SipperUniversal;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		E78E57051CC7B50900FDA80D /* Sipper.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = E78E57041CC7B50900FDA80D /* Sipper.h */; };
-		E78E57071CC7B50900FDA80D /* Sipper.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E57061CC7B50900FDA80D /* Sipper.m */; };
+		E78E57071CC7B50900FDA80D /* Sipper.mm in Sources */ = {isa = PBXBuildFile; fileRef = E78E57061CC7B50900FDA80D /* Sipper.mm */; };
+		E78E586E1CC7B62300FDA80D /* SipperAccount.mm in Sources */ = {isa = PBXBuildFile; fileRef = E78E586D1CC7B62300FDA80D /* SipperAccount.mm */; };
+		E78E58851CC7B99700FDA80D /* SipperAccountConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58841CC7B99700FDA80D /* SipperAccountConfiguration.m */; };
+		E78E58881CC7BACA00FDA80D /* SipperEndpointConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58871CC7BACA00FDA80D /* SipperEndpointConfiguration.m */; };
+		E78E588B1CC7BC1700FDA80D /* SipperTransportConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E588A1CC7BC1700FDA80D /* SipperTransportConfiguration.m */; };
+		E78E588F1CC7C07500FDA80D /* NSString+PJString.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E588E1CC7C07500FDA80D /* NSString+PJString.m */; };
+		E78E58921CC7C97000FDA80D /* NSError+SipperError.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58911CC7C97000FDA80D /* NSError+SipperError.m */; };
+		E7CDED061CC810110007C4E5 /* libPjsip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED051CC810110007C4E5 /* libPjsip.a */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E75BEFB31CC8076B00300FAD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E78E56F91CC7B50900FDA80D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E78E57001CC7B50900FDA80D;
+			remoteInfo = Sipper;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		E78E56FF1CC7B50900FDA80D /* CopyFiles */ = {
@@ -27,7 +59,21 @@
 /* Begin PBXFileReference section */
 		E78E57011CC7B50900FDA80D /* libSipper.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSipper.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E78E57041CC7B50900FDA80D /* Sipper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sipper.h; sourceTree = "<group>"; };
-		E78E57061CC7B50900FDA80D /* Sipper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Sipper.m; sourceTree = "<group>"; };
+		E78E57061CC7B50900FDA80D /* Sipper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = Sipper.mm; sourceTree = "<group>"; };
+		E78E586D1CC7B62300FDA80D /* SipperAccount.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SipperAccount.mm; sourceTree = "<group>"; };
+		E78E586F1CC7B63200FDA80D /* SipperAccount.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SipperAccount.h; sourceTree = "<group>"; };
+		E78E58831CC7B99700FDA80D /* SipperAccountConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SipperAccountConfiguration.h; sourceTree = "<group>"; };
+		E78E58841CC7B99700FDA80D /* SipperAccountConfiguration.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SipperAccountConfiguration.m; sourceTree = "<group>"; };
+		E78E58861CC7BACA00FDA80D /* SipperEndpointConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SipperEndpointConfiguration.h; sourceTree = "<group>"; };
+		E78E58871CC7BACA00FDA80D /* SipperEndpointConfiguration.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SipperEndpointConfiguration.m; sourceTree = "<group>"; };
+		E78E58891CC7BC1700FDA80D /* SipperTransportConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SipperTransportConfiguration.h; sourceTree = "<group>"; };
+		E78E588A1CC7BC1700FDA80D /* SipperTransportConfiguration.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SipperTransportConfiguration.m; sourceTree = "<group>"; };
+		E78E588D1CC7C07500FDA80D /* NSString+PJString.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSString+PJString.h"; sourceTree = "<group>"; };
+		E78E588E1CC7C07500FDA80D /* NSString+PJString.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSString+PJString.m"; sourceTree = "<group>"; };
+		E78E58901CC7C97000FDA80D /* NSError+SipperError.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+SipperError.h"; sourceTree = "<group>"; };
+		E78E58911CC7C97000FDA80D /* NSError+SipperError.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+SipperError.m"; sourceTree = "<group>"; };
+		E78E58931CC7D2A400FDA80D /* SipperAccountDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SipperAccountDelegate.h; sourceTree = "<group>"; };
+		E7CDED051CC810110007C4E5 /* libPjsip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPjsip.a; path = vendor/libPjsip.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -35,6 +81,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7CDED061CC810110007C4E5 /* libPjsip.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,8 +91,9 @@
 		E78E56F81CC7B50900FDA80D = {
 			isa = PBXGroup;
 			children = (
-				E78E57031CC7B50900FDA80D /* Sipper */,
+				E7CDED051CC810110007C4E5 /* libPjsip.a */,
 				E78E57021CC7B50900FDA80D /* Products */,
+				E78E57031CC7B50900FDA80D /* Sipper */,
 			);
 			sourceTree = "<group>";
 		};
@@ -60,10 +108,39 @@
 		E78E57031CC7B50900FDA80D /* Sipper */ = {
 			isa = PBXGroup;
 			children = (
+				E78E588C1CC7C06000FDA80D /* Categories */,
+				E78E58821CC7B98300FDA80D /* Configuration */,
 				E78E57041CC7B50900FDA80D /* Sipper.h */,
-				E78E57061CC7B50900FDA80D /* Sipper.m */,
+				E78E57061CC7B50900FDA80D /* Sipper.mm */,
+				E78E586F1CC7B63200FDA80D /* SipperAccount.h */,
+				E78E586D1CC7B62300FDA80D /* SipperAccount.mm */,
+				E78E58931CC7D2A400FDA80D /* SipperAccountDelegate.h */,
 			);
 			path = Sipper;
+			sourceTree = "<group>";
+		};
+		E78E58821CC7B98300FDA80D /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				E78E58831CC7B99700FDA80D /* SipperAccountConfiguration.h */,
+				E78E58841CC7B99700FDA80D /* SipperAccountConfiguration.m */,
+				E78E58861CC7BACA00FDA80D /* SipperEndpointConfiguration.h */,
+				E78E58871CC7BACA00FDA80D /* SipperEndpointConfiguration.m */,
+				E78E58891CC7BC1700FDA80D /* SipperTransportConfiguration.h */,
+				E78E588A1CC7BC1700FDA80D /* SipperTransportConfiguration.m */,
+			);
+			name = Configuration;
+			sourceTree = "<group>";
+		};
+		E78E588C1CC7C06000FDA80D /* Categories */ = {
+			isa = PBXGroup;
+			children = (
+				E78E588D1CC7C07500FDA80D /* NSString+PJString.h */,
+				E78E588E1CC7C07500FDA80D /* NSString+PJString.m */,
+				E78E58901CC7C97000FDA80D /* NSError+SipperError.h */,
+				E78E58911CC7C97000FDA80D /* NSError+SipperError.m */,
+			);
+			name = Categories;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -95,6 +172,9 @@
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = Sipper;
 				TargetAttributes = {
+					E75BEFAF1CC8076600300FAD = {
+						CreatedOnToolsVersion = 7.3;
+					};
 					E78E57001CC7B50900FDA80D = {
 						CreatedOnToolsVersion = 7.3;
 					};
@@ -113,22 +193,72 @@
 			projectRoot = "";
 			targets = (
 				E78E57001CC7B50900FDA80D /* Sipper */,
+				E75BEFAF1CC8076600300FAD /* SipperUniversal */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E75BEFB61CC8083400300FAD /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nset +u\n# Avoid recursively calling this script.\nif [[ $SF_MASTER_SCRIPT_RUNNING ]]\nthen\nexit 0\nfi\nset -u\nexport SF_MASTER_SCRIPT_RUNNING=1\n\nSF_TARGET_NAME=${PROJECT_NAME}\nSF_EXECUTABLE_PATH=\"lib${SF_TARGET_NAME}.a\"\nSF_WRAPPER_NAME=\"${SF_TARGET_NAME}.framework\"\n\n# The following conditionals come from\n# https://github.com/kstenerud/iOS-Universal-Framework\n\nif [[ \"$SDK_NAME\" =~ ([A-Za-z]+) ]]\nthen\nSF_SDK_PLATFORM=${BASH_REMATCH[1]}\nelse\necho \"Could not find platform name from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\nif [[ \"$SDK_NAME\" =~ ([0-9]+.*$) ]]\nthen\nSF_SDK_VERSION=${BASH_REMATCH[1]}\nelse\necho \"Could not find sdk version from SDK_NAME: $SDK_NAME\"\nexit 1\nfi\n\nif [[ \"$SF_SDK_PLATFORM\" = \"iphoneos\" ]]\nthen\nSF_OTHER_PLATFORM=iphonesimulator\nelse\nSF_OTHER_PLATFORM=iphoneos\nfi\n\nif [[ \"$BUILT_PRODUCTS_DIR\" =~ (.*)$SF_SDK_PLATFORM$ ]]\nthen\nSF_OTHER_BUILT_PRODUCTS_DIR=\"${BASH_REMATCH[1]}${SF_OTHER_PLATFORM}\"\nelse\necho \"Could not find platform name from build products directory: $BUILT_PRODUCTS_DIR\"\nexit 1\nfi\n\n# Build the other platform.\nxcrun xcodebuild -project \"${PROJECT_FILE_PATH}\" -target \"${TARGET_NAME}\" -configuration \"${CONFIGURATION}\" -sdk ${SF_OTHER_PLATFORM}${SF_SDK_VERSION} BUILD_DIR=\"${BUILD_DIR}\" OBJROOT=\"${OBJROOT}\" BUILD_ROOT=\"${BUILD_ROOT}\" SYMROOT=\"${SYMROOT}\" $ACTION\n\n# Smash the two static libraries into one fat binary and store it in the .framework\nxcrun lipo -create \"${BUILT_PRODUCTS_DIR}/${SF_EXECUTABLE_PATH}\" \"${SF_OTHER_BUILT_PRODUCTS_DIR}/${SF_EXECUTABLE_PATH}\" -output \"${BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\"\n\n# Copy the binary to the other architecture folder to have a complete framework in both.\ncp -a \"${BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\" \"${SF_OTHER_BUILT_PRODUCTS_DIR}/${SF_WRAPPER_NAME}/Versions/A/${SF_TARGET_NAME}\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E78E56FD1CC7B50900FDA80D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E78E57071CC7B50900FDA80D /* Sipper.m in Sources */,
+				E78E58851CC7B99700FDA80D /* SipperAccountConfiguration.m in Sources */,
+				E78E588B1CC7BC1700FDA80D /* SipperTransportConfiguration.m in Sources */,
+				E78E586E1CC7B62300FDA80D /* SipperAccount.mm in Sources */,
+				E78E58881CC7BACA00FDA80D /* SipperEndpointConfiguration.m in Sources */,
+				E78E588F1CC7C07500FDA80D /* NSString+PJString.m in Sources */,
+				E78E58921CC7C97000FDA80D /* NSError+SipperError.m in Sources */,
+				E78E57071CC7B50900FDA80D /* Sipper.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		E75BEFB41CC8076B00300FAD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E78E57001CC7B50900FDA80D /* Sipper */;
+			targetProxy = E75BEFB31CC8076B00300FAD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		E75BEFB01CC8076600300FAD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"PJ_AUTOCONF=1",
+					"DEBUG=1",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		E75BEFB11CC8076600300FAD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		E78E57081CC7B50900FDA80D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -214,24 +344,44 @@
 		E78E570B1CC7B50900FDA80D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				OTHER_LDFLAGS = "-ObjC";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"PJ_AUTOCONF=1",
+					"DEBUG=1",
+				);
+				HEADER_SEARCH_PATHS = "vendor/pjsip-include";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
 		E78E570C1CC7B50900FDA80D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				OTHER_LDFLAGS = "-ObjC";
+				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
+				HEADER_SEARCH_PATHS = "vendor/pjsip-include";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		E75BEFB21CC8076600300FAD /* Build configuration list for PBXAggregateTarget "SipperUniversal" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E75BEFB01CC8076600300FAD /* Debug */,
+				E75BEFB11CC8076600300FAD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E78E56FC1CC7B50900FDA80D /* Build configuration list for PBXProject "Sipper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -248,6 +398,7 @@
 				E78E570C1CC7B50900FDA80D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

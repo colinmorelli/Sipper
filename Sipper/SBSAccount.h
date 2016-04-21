@@ -1,0 +1,137 @@
+//
+//  SipperAccount.h
+//  Sipper
+//
+//  Created by Colin Morelli on 4/20/16.
+//  Copyright © 2016 Sipper. All rights reserved.
+//
+
+#ifndef SipperAccount_h
+#define SipperAccount_h
+
+#import "SipperAccountConfiguration.h"
+
+/**
+ *  Different registration states for the account
+ */
+typedef NS_ENUM(NSInteger, SipperAccountRegistrationState) {
+  /**
+   *  Account has an active registration with the server
+   */
+  SipperAccountRegistrationStateActive,
+  /**
+   *  Account is currently attempting to register with the server
+   */
+  SipperAccountRegistrationStateTrying,
+  /**
+   *  Account does not have an active registration with the server
+   */
+  SipperAccountRegistrationStateInactive
+};
+
+/**
+ *  Possible errors the account can return.
+ */
+typedef NS_ENUM(NSInteger, SipperAccountError) {
+  /**
+   *  Unable to create the underlying account
+   */
+  SipperAccountErrorCannotCreate,
+  /**
+   *  Unable to start the account registration
+   */
+  SipperAccountErrorCannotRegister
+};
+
+@class SipperEndpoint;
+@class SipperAccount;
+
+@protocol SipperAccountDelegate
+
+/**
+ * Invoked when the registration status of the sip account changes
+ *
+ * This method will be called any time the status code of the SIP registration changes, even if ultimately the
+ * underlying state does not. This gives you the ability to react to all kinds of SIP events.
+ *
+ * @param account the account that the change is in relation to
+ * @param state   the new state of the account
+ * @param code    the status code of the registration
+ */
+- (void)account:(SipperAccount * _Nonnull)account registrationDidChangeState:(SipperAccountRegistrationState)state withStatusCode:(int)code;
+
+/**
+ * Invoked when registration fails with an error
+ *
+ * Note that this method may not always be reliably called. Registration could fail in the background and not trigger
+ * an "error" due to underlying retry intervals. However, the registration state should always be updated correctly in
+ * the registrationDidChangeState method
+ *
+ * @param account the account that the failure is in relation to
+ * @param error   the error that occurred
+ */
+- (void)account:(SipperAccount * _Nonnull)account registrationDidFailWithError:(NSError * _Nonnull)error;
+
+@end
+
+@interface SipperAccount : NSObject
+
+/**
+ * Unique identifier for this account
+ *
+ * This identifier will be registered in the primary Sipper class, and can be used to fetch
+ * a particular account object
+ */
+@property (readonly, strong, nonatomic, nonnull) NSString *id;
+
+/**
+ * Pointer to the configuration that was used when constructing this object
+ *
+ * Note that this property is readonly. While the configuration object itself has mutable properties,
+ * they *will not* be respected until the account is restarted
+ */
+@property (readonly, strong, nonatomic, nonnull) SipperAccountConfiguration *configuration;
+
+/**
+ * Delegate to receive events for the account
+ *
+ * The delegate will be invoked to match state changes to the underlying account, including information
+ * about new incoming calls. You probably want to set this.
+ */
+@property (weak, nonatomic, nullable) id<SipperAccountDelegate> delegate;
+
+/**
+ * Creates a new account with the requested account configuration
+ *
+ * This method creates and configures the account object, but will not perform an explicit
+ * registration until the start method is called. Once the start method is called, registration
+ * will be retained until stop is invoked
+ *
+ * @param id            unique identifier for this account
+ * @param configuration the account configuration to use when creating the account
+ */
+- (instancetype _Nonnull)initWithIdentifier:(NSString * _Nonnull)identifier configuration:(SipperAccountConfiguration * _Nonnull)configuration endpoint:(SipperEndpoint * _Nullable)endpoint;
+
+/**
+ * Attempts to construct the underlying account
+ *
+ * This method *must* be called before any other methods on the account class. It's automatically
+ * performed by the Sipper instance, which should be used by default
+ *
+ * @param error pointer to an error
+ * @return if the account was successfully created
+ */
+- (BOOL)createWithError:(NSError * _Nullable * _Nullable)error;
+
+/**
+ * Starts the account and registers with the endpoint
+ *
+ * No delegate methods will be invoked until the start method is called. Additionally, until start is
+ * called, you cannot make or receive calls. The create method *must* be called before start, and will
+ * be called automatiaclly if registering through Sipper
+ */
+- (void)start;
+
+@end
+
+#endif /* SipperAccount_h */
