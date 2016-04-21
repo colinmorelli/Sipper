@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export PJSIP_VERSION='2.4.5'
 export BASE_DIR=`pwd -P`
 export PRODUCT_NAME='libPjsip'
 export TARGET_DIR='vendor'
@@ -33,7 +34,7 @@ EOF
 
 function complete() {
     clean
-    svn_checkout $1
+    svn_checkout
     mkdir -p "$BASE_DIR"/pjsip/logs/
     all
     copy_headers
@@ -58,22 +59,11 @@ function clean() {
 function svn_checkout() {
     BASE_URL="http://svn.pjsip.org/repos/pjproject"
 
-    if [ -z ${1} ]; then
-        echo "No version provided, checking out \"trunk\""
-        CHECKOUT_URL="${BASE_URL}/trunk/"
-    else
-        echo "Checking out version ${1}"
-        CHECKOUT_URL="${BASE_URL}/tags/${1}/"
-    fi
+    echo "Checking out version ${PJSIP_VERSION}"
+    CHECKOUT_URL="${BASE_URL}/tags/${PJSIP_VERSION}/"
 
-    if [ ! -d "${BASE_DIR}/src/" ]; then
-        # Src does not exist, assuming no previous version downloaded, using checkout.
-        svn export "${CHECKOUT_URL}" pjsip/src/
-        # Svn checkout http://svn.pjsip.org/repos/pjproject/tags/2.2.1/ src/
-    else
-        # Src directory exists, using switch to prevent 'is already a working copy for a different URL' error.
-        svn switch "${CHECKOUT_URL}" pjsip/src/
-    fi
+    rm -rf "$BASE_DIR/pjsip/src"
+    svn export "${CHECKOUT_URL}" "${BASE_DIR}/pjsip/src/"
 }
 
 # Function Prints info about the created libraries.

@@ -152,6 +152,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = E78E570A1CC7B50900FDA80D /* Build configuration list for PBXNativeTarget "Sipper" */;
 			buildPhases = (
+				E7B0A7181CC8634D00E93EB1 /* ShellScript */,
 				E78E56FD1CC7B50900FDA80D /* Sources */,
 				E78E56FE1CC7B50900FDA80D /* Frameworks */,
 				E78E56FF1CC7B50900FDA80D /* CopyFiles */,
@@ -201,6 +202,23 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		E7B0A7181CC8634D00E93EB1 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"",
+				"$(SRCROOT)/build.sh",
+			);
+			outputPaths = (
+				"$(SRCROOT)/vendor/libPjsip.a",
+				"$(SRCROOT)/vendor/pjsip-include",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "$SRCROOT/build.sh complete";
+		};
 		E7CDED2F1CC822C30007C4E5 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 12;
