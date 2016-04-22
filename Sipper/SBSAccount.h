@@ -94,7 +94,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * This identifier will be registered in the primary Sipper class, and can be used to fetch
  * a particular account object
  */
-@property (readonly, strong, nonatomic, nonnull) NSString *id;
+@property (readonly, nonatomic) NSUInteger id;
 
 /**
  * Pointer to the configuration that was used when constructing this object
@@ -113,29 +113,6 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 @property (weak, nonatomic, nullable) id<SBSAccountDelegate> delegate;
 
 /**
- * Creates a new account with the requested account configuration
- *
- * This method creates and configures the account object, but will not perform an explicit
- * registration until the start method is called. Once the start method is called, registration
- * will be retained until stop is invoked
- *
- * @param id            unique identifier for this account
- * @param configuration the account configuration to use when creating the account
- */
-- (instancetype _Nonnull)initWithIdentifier:(NSString * _Nonnull)identifier configuration:(SBSAccountConfiguration * _Nonnull)configuration endpoint:(SBSEndpoint * _Nullable)endpoint;
-
-/**
- * Attempts to construct the underlying account
- *
- * This method *must* be called before any other methods on the account class. It's automatically
- * performed by the Sipper instance, which should be used by default
- *
- * @param error pointer to an error
- * @return if the account was successfully created
- */
-- (BOOL)createWithError:(NSError * _Nullable * _Nullable)error;
-
-/**
  * Starts the account and registers with the endpoint
  *
  * The SBSAccount instance must be initialized using the createWithError method before it can be started. This
@@ -144,7 +121,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * Note that accounts will not be registered with the SIP provider until the start method is called. This gives you
  * an opportunity to attach delegates to the SBSAccount and avoid race conditions
  */
-- (void)start;
+- (void)startRegistration;
 
 @end
 

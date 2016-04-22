@@ -22,9 +22,9 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		E70D565C1CC8F58600348D97 /* SBSCall.mm in Sources */ = {isa = PBXBuildFile; fileRef = E70D565B1CC8F58600348D97 /* SBSCall.mm */; };
+		E70D565C1CC8F58600348D97 /* SBSCall.m in Sources */ = {isa = PBXBuildFile; fileRef = E70D565B1CC8F58600348D97 /* SBSCall.m */; };
 		E78E57051CC7B50900FDA80D /* Sipper.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = E78E57041CC7B50900FDA80D /* Sipper.h */; };
-		E78E586E1CC7B62300FDA80D /* SBSAccount.mm in Sources */ = {isa = PBXBuildFile; fileRef = E78E586D1CC7B62300FDA80D /* SBSAccount.mm */; };
+		E78E586E1CC7B62300FDA80D /* SBSAccount.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E586D1CC7B62300FDA80D /* SBSAccount.m */; };
 		E78E58851CC7B99700FDA80D /* SBSAccountConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58841CC7B99700FDA80D /* SBSAccountConfiguration.m */; };
 		E78E58881CC7BACA00FDA80D /* SBSEndpointConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58871CC7BACA00FDA80D /* SBSEndpointConfiguration.m */; };
 		E78E588B1CC7BC1700FDA80D /* SBSTransportConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E588A1CC7BC1700FDA80D /* SBSTransportConfiguration.m */; };
@@ -35,7 +35,7 @@
 		E79D73E01CCA861000400F86 /* SBSAudioDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73DF1CCA861000400F86 /* SBSAudioDevice.m */; };
 		E79D73E31CCA8CF500400F86 /* SBSAudioManager.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73E21CCA8CF500400F86 /* SBSAudioManager.m */; };
 		E7CDED061CC810110007C4E5 /* libPjsip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED051CC810110007C4E5 /* libPjsip.a */; };
-		E7CDED161CC815730007C4E5 /* SBSEndpoint.mm in Sources */ = {isa = PBXBuildFile; fileRef = E7CDED151CC815730007C4E5 /* SBSEndpoint.mm */; };
+		E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E7CDED151CC815730007C4E5 /* SBSEndpoint.m */; };
 		E7CDED1E1CC81AF90007C4E5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */; };
 		E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */; };
 		E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED211CC81B230007C4E5 /* CFNetwork.framework */; };
@@ -56,12 +56,12 @@
 
 /* Begin PBXFileReference section */
 		E70D565A1CC8F58600348D97 /* SBSCall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSCall.h; sourceTree = "<group>"; };
-		E70D565B1CC8F58600348D97 /* SBSCall.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SBSCall.mm; sourceTree = "<group>"; };
-		E70D565D1CC8F9F100348D97 /* SBSCall+Internal.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = "SBSCall+Internal.hpp"; sourceTree = "<group>"; };
+		E70D565B1CC8F58600348D97 /* SBSCall.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCall.m; sourceTree = "<group>"; };
+		E70D565D1CC8F9F100348D97 /* SBSCall+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSCall+Internal.h"; sourceTree = "<group>"; };
 		E70D56601CC8FF3200348D97 /* SBSConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SBSConstants.h; sourceTree = "<group>"; };
 		E78E57011CC7B50900FDA80D /* libSipper.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSipper.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E78E57041CC7B50900FDA80D /* Sipper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sipper.h; sourceTree = "<group>"; };
-		E78E586D1CC7B62300FDA80D /* SBSAccount.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SBSAccount.mm; sourceTree = "<group>"; };
+		E78E586D1CC7B62300FDA80D /* SBSAccount.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSAccount.m; sourceTree = "<group>"; };
 		E78E586F1CC7B63200FDA80D /* SBSAccount.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SBSAccount.h; sourceTree = "<group>"; };
 		E78E58831CC7B99700FDA80D /* SBSAccountConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSAccountConfiguration.h; sourceTree = "<group>"; };
 		E78E58841CC7B99700FDA80D /* SBSAccountConfiguration.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSAccountConfiguration.m; sourceTree = "<group>"; };
@@ -81,9 +81,10 @@
 		E79D73DF1CCA861000400F86 /* SBSAudioDevice.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSAudioDevice.m; sourceTree = "<group>"; };
 		E79D73E11CCA8CF500400F86 /* SBSAudioManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSAudioManager.h; sourceTree = "<group>"; };
 		E79D73E21CCA8CF500400F86 /* SBSAudioManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSAudioManager.m; sourceTree = "<group>"; };
+		E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SBSAccount+Internal.h"; sourceTree = "<group>"; };
 		E7CDED051CC810110007C4E5 /* libPjsip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPjsip.a; path = vendor/libPjsip.a; sourceTree = "<group>"; };
 		E7CDED141CC815730007C4E5 /* SBSEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSEndpoint.h; sourceTree = "<group>"; };
-		E7CDED151CC815730007C4E5 /* SBSEndpoint.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SBSEndpoint.mm; sourceTree = "<group>"; };
+		E7CDED151CC815730007C4E5 /* SBSEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSEndpoint.m; sourceTree = "<group>"; };
 		E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		E7CDED211CC81B230007C4E5 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
@@ -131,15 +132,16 @@
 				E78E58821CC7B98300FDA80D /* Configuration */,
 				E79D73D21CC9939D00400F86 /* Model */,
 				E78E586F1CC7B63200FDA80D /* SBSAccount.h */,
-				E78E586D1CC7B62300FDA80D /* SBSAccount.mm */,
+				E78E586D1CC7B62300FDA80D /* SBSAccount.m */,
+				E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */,
 				E79D73E11CCA8CF500400F86 /* SBSAudioManager.h */,
 				E79D73E21CCA8CF500400F86 /* SBSAudioManager.m */,
-				E70D565D1CC8F9F100348D97 /* SBSCall+Internal.hpp */,
 				E70D565A1CC8F58600348D97 /* SBSCall.h */,
-				E70D565B1CC8F58600348D97 /* SBSCall.mm */,
+				E70D565B1CC8F58600348D97 /* SBSCall.m */,
+				E70D565D1CC8F9F100348D97 /* SBSCall+Internal.h */,
 				E70D56601CC8FF3200348D97 /* SBSConstants.h */,
 				E7CDED141CC815730007C4E5 /* SBSEndpoint.h */,
-				E7CDED151CC815730007C4E5 /* SBSEndpoint.mm */,
+				E7CDED151CC815730007C4E5 /* SBSEndpoint.m */,
 				E78E57041CC7B50900FDA80D /* Sipper.h */,
 			);
 			path = Sipper;
@@ -289,17 +291,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E70D565C1CC8F58600348D97 /* SBSCall.mm in Sources */,
+				E70D565C1CC8F58600348D97 /* SBSCall.m in Sources */,
 				E78E58851CC7B99700FDA80D /* SBSAccountConfiguration.m in Sources */,
 				E78E588B1CC7BC1700FDA80D /* SBSTransportConfiguration.m in Sources */,
-				E78E586E1CC7B62300FDA80D /* SBSAccount.mm in Sources */,
+				E78E586E1CC7B62300FDA80D /* SBSAccount.m in Sources */,
 				E78E58881CC7BACA00FDA80D /* SBSEndpointConfiguration.m in Sources */,
 				E78E588F1CC7C07500FDA80D /* NSString+PJString.m in Sources */,
 				E79D73D81CC9953800400F86 /* SBSSipURI.m in Sources */,
 				E79D73E01CCA861000400F86 /* SBSAudioDevice.m in Sources */,
 				E78E58921CC7C97000FDA80D /* NSError+SipperError.m in Sources */,
 				E79D73E31CCA8CF500400F86 /* SBSAudioManager.m in Sources */,
-				E7CDED161CC815730007C4E5 /* SBSEndpoint.mm in Sources */,
+				E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */,
 				E79D73D51CC993B300400F86 /* SBSNameAddressPair.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

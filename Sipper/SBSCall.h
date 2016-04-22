@@ -89,6 +89,11 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 @interface SBSCall : NSObject
 
 /**
+ * Unique identifier for hte call
+ */
+@property (nonatomic) NSUInteger id;
+
+/**
  * The SIP URI that the call originated from
  */
 @property (nonatomic, nullable) SBSNameAddressPair *from;

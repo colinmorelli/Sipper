@@ -13,6 +13,7 @@
 
 @class SBSAccount;
 @class SBSAccountConfiguration;
+@class SBSAudioManager;
 @class SBSEndpointConfiguration;
 
 /**
@@ -85,6 +86,17 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @return a created account instance, if successful
  */
 - (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError **)error;
+
+/**
+ * Returns the audio manager associated with this endpoint
+ *
+ * You can use the audio manager to configure input/output devices for handling call audio. Note that the
+ * methods on SBAudioManager will affect all calls, as you're changing the input and output devices for the
+ * local host.
+ *
+ * @returns the audio manager that controls local audio devices
+ */
+- (SBSAudioManager *)audioManager;
 
 /**
  * Returns the static shared endpoint

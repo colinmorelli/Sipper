@@ -34,7 +34,7 @@
  *
  * @return an array of devices supporting audio input
  */
-- (NSArray *)availableInputDevices;
+- (NSArray * _Nonnull)availableInputDevices;
 
 /**
  * Returns an array of output devices available on the application
@@ -45,7 +45,7 @@
  *
  * @return an array of devices supporting audio input
  */
-- (NSArray *)availableOuptutDevices;
+- (NSArray * _Nonnull)availableOuptutDevices;
 
 /**
  * Selects the audio input device to use
@@ -57,7 +57,7 @@
  * @param error       pointer to an error that will be updated if selection fails
  * @return whether or not audio device selection was successful
  */
-- (BOOL)selectAudioInputDevice:(SBSAudioDevice *)inputDevice error:(NSError **)error;
+- (BOOL)selectAudioInputDevice:(SBSAudioDevice * _Nonnull)inputDevice error:(NSError **)error;
 
 /**
  * Selects the audio output device to use
@@ -69,7 +69,7 @@
  * @param error        pointer to an error that will be updated if selection fails
  * @return whether or not audio device selection was successful
  */
-- (BOOL)selectAudioOutputDevice:(SBSAudioDevice *)outputDevice error:(NSError **)error;
+- (BOOL)selectAudioOutputDevice:(SBSAudioDevice * _Nonnull)outputDevice error:(NSError **)error;
 
 /**
  * The shared audio manager for the application
@@ -77,7 +77,7 @@
  * Return value from this method is a singleton instance of the audio manager that can be used
  * for changing audio device settings
  */
-+ (instancetype)sharedManager;
++ (instancetype _Nonnull)sharedManager;
 
 @end
 

@@ -6,46 +6,14 @@
 //  Copyright © 2016 Sipper. All rights reserved.
 //
 
-#import "SBSCall.h"
-#import "SBSCall+Internal.hpp"
+#import "SBSCall+Internal.h"
+
+#import <pjsua.h>
+
 #import "NSString+PJString.h"
-
-#import <pjsua2/account.hpp>
-#import <pjsua2/endpoint.hpp>
-#import <pjsua2/call.hpp>
-
-typedef void (^OnCallStateHandler)(pj::OnCallStateParam param);
-typedef void (^OnCallMediaStateHandler)(pj::OnCallMediaStateParam param);
-
-//
-// MARK: PJSIP Subclass
-//
-
-class SBSCallWrapper : public pj::Call
-{
-public:
-  SBSCallWrapper(pj::Account &acc, int call_id = PJSUA_INVALID_ID) : Call(acc, call_id) {}
-  ~SBSCallWrapper() {}
-  
-  OnCallStateHandler onCallStateHandler;
-  OnCallMediaStateHandler onCallMediaStateHandler;
-  
-  virtual void onCallState(pj::OnCallStateParam &prm) {
-    if (onCallStateHandler != NULL) {
-      onCallStateHandler(prm);
-    }
-  }
-  
-  virtual void onCallMediaState(pj::OnCallMediaStateParam &ptm) {
-    if (onCallMediaStateHandler != NULL) {
-      onCallMediaStateHandler(ptm);
-    }
-  }
-};
 
 @interface SBSCall ()
 
-@property (nonatomic) SBSCallWrapper *call;
 @property (strong, nonatomic) NSMutableDictionary *headers;
 
 @end
@@ -54,13 +22,12 @@ public:
 
 //------------------------------------------------------------------------------
 
-- (instancetype)initWithAccount:(SBSAccount *)account call:(SBSCallWrapper *)wrapper direction:(SBSCallDirection)direction {
+- (instancetype)initWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId direction:(SBSCallDirection)direction {
   if (self = [super init]) {
     _account = account;
-    _call = wrapper;
+    _id = callId;
     _direction = direction;
     _headers = [[NSMutableDictionary alloc] init];
-    _state = [self convertState:wrapper->getInfo().state];
     
     [self prepare];
   }
@@ -71,47 +38,17 @@ public:
 //------------------------------------------------------------------------------
 
 - (void)prepare {
-  self.call->onCallStateHandler = ^(pj::OnCallStateParam param) {
-    SBSCallState state = self.state;
-    
-    try {
-      pj::CallInfo info = self.call->getInfo();
-      state = [self convertState:info.state];
-    } catch (pj::Error& err) {
-      if (err.status == PJSIP_ESESSIONTERMINATED) {
-        state = SBSCallStateDisconnected;
-      } else {
-        throw err;
-      }
-    }
-    
-    // Update the call state and fire an event handler
-    _state = state;
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self.delegate call:self didChangeState:state];
-    });
-  };
+  pjsua_call_set_user_data((int) _id, (__bridge void *)(self));
   
-  self.call->onCallMediaStateHandler = ^(pj::OnCallMediaStateParam param) {
-    pj::CallInfo info = self.call->getInfo();
-    
-    // Check if media is active and connect the ports
-    for (unsigned i = 0; i < info.media.size(); i++) {
-      if (info.media[i].type == PJMEDIA_TYPE_AUDIO && self.call->getMedia(i)) {
-        pj::AudioMedia *aud_med = (pj::AudioMedia *) self.call->getMedia(i);
-        
-        // Connect the call audio media to sound device
-        pj::AudDevManager& mgr = pj::Endpoint::instance().audDevManager();
-        aud_med->startTransmit(mgr.getPlaybackDevMedia());
-        mgr.getCaptureDevMedia().startTransmit(*aud_med);
-      }
-    }
-    
-    // Fire the event handler back on the main thread
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [self.delegate callDidChangeMediaState:self];
-    });
-  };
+  // Get the current call state to save on the call instance - always called immediately
+  [self handleCallStateChange];
+  
+  // Also make sure we've updated to the correct media settings
+  [self handleCallMediaStateChange];
+}
+
+- (void)dealloc {
+  pjsua_call_set_user_data((int) _id, NULL);
 }
 
 //------------------------------------------------------------------------------
@@ -130,9 +67,7 @@ public:
   }
   
   // Otherwise try to accept the call - we should be confident that this works now
-  pj::CallOpParam param;
-  param.statusCode = (pjsip_status_code) code;
-  self.call->answer(param);
+  pjsua_call_answer((int) _id, (pjsip_status_code) code, NULL, NULL);
 }
 
 //------------------------------------------------------------------------------
@@ -145,9 +80,7 @@ public:
   }
   
   // Otherwise hangup the call
-  pj::CallOpParam param;
-  param.statusCode = (pjsip_status_code) SBSStatusCodeDecline;
-  self.call->hangup(param);
+  pjsua_call_hangup((int) _id, PJSIP_SC_DECLINE, NULL, NULL);
 }
 
 //------------------------------------------------------------------------------
@@ -166,7 +99,49 @@ public:
 
 - (void)setMuted:(BOOL)muted {
   _muted = muted;
-  [self updateAudioPorts];
+}
+
+//------------------------------------------------------------------------------
+#pragma mark - Event Handlers
+//------------------------------------------------------------------------------
+
+- (void)handleCallStateChange {
+  pjsua_call_info info;
+  pj_status_t status = pjsua_call_get_info((int) _id, &info);
+  
+  // Getting call info *will* fail when the call has been disconnected, so catch that
+  // and update as appropriate
+  if (status == PJSIP_ESESSIONTERMINATED) {
+    _state = SBSCallStateDisconnected;
+  } else if (status == PJ_SUCCESS) {
+    _state = [self convertState:info.state];
+  }
+  
+  // And invoke the delegate method back on the main thread
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self.delegate call:self didChangeState:_state];
+  });
+}
+
+- (void)handleCallMediaStateChange {
+  pjsua_call_info info;
+  pjsua_call_get_info((int) _id, &info);
+  
+  // Check if media is active and connect the ports
+  for (unsigned i = 0; i < info.media_cnt; i++) {
+    pjsua_call_media_info media = info.media[i];
+    
+    // If we have an active audio stream, connect the audio channels
+    if (media.type == PJMEDIA_TYPE_AUDIO && media.status == PJSUA_CALL_MEDIA_ACTIVE) {
+//      pjsua_conf_connect(media.stream.aud.conf_slot, 0);
+//      pjsua_conf_connect(0, media.stream.aud.conf_slot);
+    }
+  }
+  
+  // Fire the event handler back on the main thread
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self.delegate callDidChangeMediaState:self];
+  });
 }
 
 //------------------------------------------------------------------------------
@@ -174,38 +149,15 @@ public:
 //------------------------------------------------------------------------------
 
 - (void)updateAudioPorts {
-  
-  // If we're not actively on a call, we can't update audio ports
-  if (_state != SBSCallStateActive) {
-    return;
-  }
-  
-  // This is not going to be thread safe - while we're working on connecting/disconnecting
-  // audio ports, the user could request a new input or output device to be used. So, force
-  // ourselves into synchronization here. This should be locked for a short amount of time.
-  @synchronized (self) {
-    
-    
-    
-  }
+
 }
 
 //------------------------------------------------------------------------------
 #pragma mark - Factory
 //------------------------------------------------------------------------------
 
-+ (instancetype)incomingCallWithAccount:(SBSAccount *)account underlying:(pj::Account *)underlying incomingCallData:(pj::OnIncomingCallParam)param {
-  SBSCallWrapper *wrapper = new SBSCallWrapper(*underlying, param.callId);
-  SBSCall *call = [[SBSCall alloc] initWithAccount:account call:wrapper direction:SBSCallDirectionInbound];
-  
-  // Check to see if there are any headers we can parse out of the call
-  void *headers = param.rdata.pjRxData;
-  if (headers == NULL) {
-    return call;
-  }
-  
-  // We have a valid call metadata object, iterate over the headers
-  pjsip_rx_data *data = (pjsip_rx_data *)headers;
++ (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
+  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionInbound];
   pjsip_msg *msg = data->msg_info.msg;
   pjsip_hdr *hdr = msg->hdr.next,
             *end = &msg->hdr;
@@ -254,6 +206,15 @@ public:
   }
   
   return call;
+}
+
++ (instancetype)fromCallId:(pjsua_call_id)callId {
+  void *data = pjsua_call_get_user_data(callId);
+  if (data == NULL) {
+    return nil;
+  }
+  
+  return (__bridge SBSCall *)data;
 }
 
 //------------------------------------------------------------------------------
