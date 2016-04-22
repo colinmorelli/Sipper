@@ -145,7 +145,7 @@ public:
       if (header->uri != NULL) {
         char uri[512] = {0};
         header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.from = [[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding];
+        call.from = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
       }
     } else if (hdr->type == PJSIP_H_TO) {
       pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
@@ -154,7 +154,7 @@ public:
       if (header->uri != NULL) {
         char uri[512] = {0};
         header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.to = [[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding];
+        call.to = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
       }
     }
 

@@ -12,6 +12,7 @@
 #import <Foundation/Foundation.h>
 #import "SBSAccount.h"
 #import "SBSConstants.h"
+#import "SBSNameAddressPair.h"
 
 @class SBSCall;
 
@@ -90,12 +91,12 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 /**
  * The SIP URI that the call originated from
  */
-@property (nonatomic, nonnull) NSString *from;
+@property (nonatomic, nullable) SBSNameAddressPair *from;
 
 /**
  * The SIP URI that the call is going to
  */
-@property (nonatomic, nonnull) NSString *to;
+@property (nonatomic, nullable) SBSNameAddressPair *to;
 
 /**
  * All SIP headers present on the call
