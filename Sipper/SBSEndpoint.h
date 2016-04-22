@@ -50,25 +50,16 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
 @property (strong, nonatomic, readonly) SBSEndpointConfiguration *configuration;
 
 /**
- * Creates an instance of the Sipper wrapper with the requested endpoint configuration
- *
- * Note that an application can only have _one_ instance of the Sipper class. This is currently not
- * enforced by the library, but should be later.
- *
- * @param configuration the configuration to use when creating the endpoint
- */
-- (instancetype)initWithEndpointConfiguration:(SBSEndpointConfiguration *)configuration;
-
-/**
  * Initializes the SIP endpoint
  *
  * This method sets up underlying data structures and functions to prepare the endpoint for use
  * and account registrations.
  *
- * @param error pointer to an error
+ * @param configuration sip endpoint configuration to use
+ * @param error         pointer to an error
  * @return if the initialization was successful
  */
-- (BOOL)initializeEndpointWithError:(NSError **)error;
+- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration *)configuration error:(NSError **)error;
 
 /**
  * Destroys the underlying SIP endpoint
@@ -94,6 +85,14 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @return a created account instance, if successful
  */
 - (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError **)error;
+
+/**
+ * Returns the static shared endpoint
+ *
+ * Note that the SBSEndpoint returned from this method *is not* ready to be used until initializeEndpointWithConfiguration
+ * is invoked on it.
+ */
++ (instancetype)sharedEndpoint;
 
 @end
 

@@ -11,6 +11,7 @@
 #import "NSString+PJString.h"
 
 #import <pjsua2/account.hpp>
+#import <pjsua2/endpoint.hpp>
 #import <pjsua2/call.hpp>
 
 typedef void (^OnCallStateHandler)(pj::OnCallStateParam param);
@@ -51,6 +52,8 @@ public:
 
 @implementation SBSCall
 
+//------------------------------------------------------------------------------
+
 - (instancetype)initWithAccount:(SBSAccount *)account call:(SBSCallWrapper *)wrapper direction:(SBSCallDirection)direction {
   if (self = [super init]) {
     _account = account;
@@ -64,6 +67,8 @@ public:
   
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 - (void)prepare {
   self.call->onCallStateHandler = ^(pj::OnCallStateParam param) {
@@ -80,41 +85,114 @@ public:
       }
     }
     
+    // Update the call state and fire an event handler
+    _state = state;
     dispatch_async(dispatch_get_main_queue(), ^{
       [self.delegate call:self didChangeState:state];
     });
   };
   
   self.call->onCallMediaStateHandler = ^(pj::OnCallMediaStateParam param) {
+    pj::CallInfo info = self.call->getInfo();
+    
+    // Check if media is active and connect the ports
+    for (unsigned i = 0; i < info.media.size(); i++) {
+      if (info.media[i].type == PJMEDIA_TYPE_AUDIO && self.call->getMedia(i)) {
+        pj::AudioMedia *aud_med = (pj::AudioMedia *) self.call->getMedia(i);
+        
+        // Connect the call audio media to sound device
+        pj::AudDevManager& mgr = pj::Endpoint::instance().audDevManager();
+        aud_med->startTransmit(mgr.getPlaybackDevMedia());
+        mgr.getCaptureDevMedia().startTransmit(*aud_med);
+      }
+    }
+    
+    // Fire the event handler back on the main thread
     dispatch_async(dispatch_get_main_queue(), ^{
       [self.delegate callDidChangeMediaState:self];
     });
   };
 }
 
+//------------------------------------------------------------------------------
+
 - (void)answer {
   [self answerWithStatus:SBSStatusCodeOk];
 }
 
+//------------------------------------------------------------------------------
+
 - (void)answerWithStatus:(SBSStatusCode)code {
+  
+  // No-op if we're not in a valid call state for this action
+  if (_state != SBSCallStateEarly && _state != SBSCallStateIncoming) {
+    return;
+  }
+  
+  // Otherwise try to accept the call - we should be confident that this works now
   pj::CallOpParam param;
   param.statusCode = (pjsip_status_code) code;
   self.call->answer(param);
 }
 
+//------------------------------------------------------------------------------
+
 - (void)hangup {
+  
+  // If we're in an unknown state, or already disconnected, we can't do this
+  if (_state == SBSCallStateUnknown || _state == SBSCallStateDisconnected) {
+    return;
+  }
+  
+  // Otherwise hangup the call
   pj::CallOpParam param;
   param.statusCode = (pjsip_status_code) SBSStatusCodeDecline;
   self.call->hangup(param);
 }
 
+//------------------------------------------------------------------------------
+
 - (NSString *)valueForHeader:(NSString *)header {
   return self.headers[header];
 }
 
+//------------------------------------------------------------------------------
+
 - (NSDictionary *)allHeaders {
   return [self.headers copy];
 }
+
+//------------------------------------------------------------------------------
+
+- (void)setMuted:(BOOL)muted {
+  _muted = muted;
+  [self updateAudioPorts];
+}
+
+//------------------------------------------------------------------------------
+#pragma mark - Media State
+//------------------------------------------------------------------------------
+
+- (void)updateAudioPorts {
+  
+  // If we're not actively on a call, we can't update audio ports
+  if (_state != SBSCallStateActive) {
+    return;
+  }
+  
+  // This is not going to be thread safe - while we're working on connecting/disconnecting
+  // audio ports, the user could request a new input or output device to be used. So, force
+  // ourselves into synchronization here. This should be locked for a short amount of time.
+  @synchronized (self) {
+    
+    
+    
+  }
+}
+
+//------------------------------------------------------------------------------
+#pragma mark - Factory
+//------------------------------------------------------------------------------
 
 + (instancetype)incomingCallWithAccount:(SBSAccount *)account underlying:(pj::Account *)underlying incomingCallData:(pj::OnIncomingCallParam)param {
   SBSCallWrapper *wrapper = new SBSCallWrapper(*underlying, param.callId);
@@ -178,9 +256,9 @@ public:
   return call;
 }
 
-//
-// MARK: Private Methods
-//
+//------------------------------------------------------------------------------
+#pragma mark - Converters
+//------------------------------------------------------------------------------
 
 - (SBSCallState)convertState:(pjsip_inv_state)state {
   switch (state) {

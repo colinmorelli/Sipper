@@ -69,6 +69,8 @@ public:
 
 @implementation SBSAccount
 
+//------------------------------------------------------------------------------
+
 - (instancetype)initWithIdentifier:(NSString *)identifier configuration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint {
   if (self = [super init]) {
     _endpoint = endpoint;
@@ -78,6 +80,8 @@ public:
   
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 - (void)start {
   
@@ -94,6 +98,8 @@ public:
     [self.delegate account:self registrationDidFailWithError:error];
   }
 }
+
+//------------------------------------------------------------------------------
 
 - (BOOL)createWithError:(NSError *__autoreleasing *)error {
   
@@ -136,9 +142,9 @@ public:
   return YES;
 }
 
-//
-// MARK: Converters
-//
+//------------------------------------------------------------------------------
+#pragma mark - Converters
+//------------------------------------------------------------------------------
 
 - (pj::AccountConfig)convertAccountConfiguration:(SBSAccountConfiguration *)configuration {
   NSString *tcp = @"";
@@ -182,6 +188,8 @@ public:
   
   return config;
 }
+
+//------------------------------------------------------------------------------
 
 - (NSString *)convertAuthenticationScheme:(SBSAuthenticationScheme)scheme {
   switch (self.configuration.sipAuthScheme) {

@@ -119,6 +119,11 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 @property (nonatomic, readonly) SBSCallState state;
 
 /**
+ * The current mute state of the call, can be set to place the call on mute
+ */
+@property (nonatomic) BOOL muted;
+
+/**
  * Delegate to receive call events
  */
 @property (nonatomic, nullable) id<SBSCallDelegate> delegate;
@@ -146,8 +151,8 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 /**
  * Hangs up the current call
  *
- * This method can be invoked on a call that is not currently answered. If it is, the call will be 
- * rejected by the remote.
+ * This method can be invoked on a call that is not currently answered. If it is, the call will be
+ * explicitly declined.
  */
 - (void)hangup;
 

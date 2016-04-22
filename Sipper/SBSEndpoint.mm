@@ -45,16 +45,19 @@ public:
 
 @implementation SBSEndpoint
 
-- (instancetype)initWithEndpointConfiguration:(SBSEndpointConfiguration *)configuration {
+//------------------------------------------------------------------------------
+
+- (instancetype)init {
   if (self = [super init]) {
-    _configuration = configuration;
     _accounts = [[NSMutableDictionary alloc] init];
   }
   
   return self;
 }
 
-- (BOOL)initializeEndpointWithError:(NSError *__autoreleasing *)error {
+//------------------------------------------------------------------------------
+
+- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration *)configuration error:(NSError *__autoreleasing *)error {
   if (self.endpoint != nil) {
     return YES;
   }
@@ -77,7 +80,7 @@ public:
   
   // Initialize the endpoint with the new configuration
   try {
-    self.endpoint->libInit([self convertEndpointConfiguration:self.configuration]);
+    self.endpoint->libInit([self convertEndpointConfiguration:configuration]);
   } catch (pj::Error& err) {
     [self destroyEndpointWithError:nil];
     *error = [NSError ErrorWithUnderlying:nil
@@ -89,7 +92,7 @@ public:
   }
   
   // Now, register all of the requested transports with the endpoint
-  for (SBSTransportConfiguration *transportConfiguration in self.configuration.transportConfigurations) {
+  for (SBSTransportConfiguration *transportConfiguration in configuration.transportConfigurations) {
     try {
       self.endpoint->transportCreate([self convertTransportType:transportConfiguration.transportType], [self convertTransportConfiguration:transportConfiguration]);
     } catch (pj::Error& err) {
@@ -116,9 +119,14 @@ public:
     return NO;
   }
   
+  // Update the configuration that is in use
+  _configuration = configuration;
+  
   // We're successful if we didn't set an error pointer
   return YES;
 }
+
+//------------------------------------------------------------------------------
 
 - (BOOL)destroyEndpointWithError:(NSError *__autoreleasing *)error {
   if (self.endpoint == nil) {
@@ -148,6 +156,8 @@ public:
   return YES;
 }
 
+//------------------------------------------------------------------------------
+
 - (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError *__autoreleasing *)error {
   NSString *identifier = [[NSUUID UUID] UUIDString];
   SBSAccount *account = [[SBSAccount alloc] initWithIdentifier:identifier configuration:configuration endpoint:self];
@@ -161,6 +171,8 @@ public:
   return self.accounts[identifier] = account;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)dealloc {
   NSError *error;
   
@@ -170,9 +182,9 @@ public:
   }
 }
 
-//
-// MARK: Private Methods
-//
+//------------------------------------------------------------------------------
+#pragma mark - Converters
+//------------------------------------------------------------------------------
 
 - (pj::EpConfig)convertEndpointConfiguration:(SBSEndpointConfiguration *)configuration {
   pj::EpConfig config = pj::EpConfig();
@@ -210,6 +222,20 @@ public:
     case SBSTransportTypeUDP6:
       return PJSIP_TRANSPORT_UDP6;
   }
+}
+
+//------------------------------------------------------------------------------
+#pragma mark - Factory
+//------------------------------------------------------------------------------
++ (instancetype)sharedEndpoint {
+  static dispatch_once_t p = 0;
+  __strong static id _sharedObject = nil;
+  
+  dispatch_once(&p, ^{
+    _sharedObject = [[self alloc] init];
+  });
+  
+  return _sharedObject;
 }
 
 @end
