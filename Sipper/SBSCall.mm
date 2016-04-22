@@ -67,20 +67,20 @@ public:
 
 - (void)prepare {
   self.call->onCallStateHandler = ^(pj::OnCallStateParam param) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      SBSCallState state = self.state;
-      
-      try {
-        pj::CallInfo info = self.call->getInfo();
-        state = [self convertState:info.state];
-      } catch (pj::Error& err) {
-        if (err.status == PJSIP_ESESSIONTERMINATED) {
-          state = SBSCallStateDisconnected;
-        } else {
-          throw err;
-        }
+    SBSCallState state = self.state;
+    
+    try {
+      pj::CallInfo info = self.call->getInfo();
+      state = [self convertState:info.state];
+    } catch (pj::Error& err) {
+      if (err.status == PJSIP_ESESSIONTERMINATED) {
+        state = SBSCallStateDisconnected;
+      } else {
+        throw err;
       }
-      
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
       [self.delegate call:self didChangeState:state];
     });
   };
