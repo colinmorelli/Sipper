@@ -162,6 +162,16 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 - (void)hangup;
 
 /**
+ * Sends the requested digits as DTMF tones
+ *
+ * Callers can pass any number of digits as a string to this method. Each digit will be sent individually
+ * to the remote.
+ *
+ * @param digits the digits to send to the remote
+ */
+- (void)sendDigits:(NSString * _Nullable)digits;
+
+/**
  * Returns a value for the named header
  *
  * @param header the name of the header to get the value for (case insensitive)

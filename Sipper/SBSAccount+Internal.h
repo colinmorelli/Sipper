@@ -18,17 +18,6 @@
 @interface SBSAccount ()
 
 /**
- * Attempts to construct the underlying account
- *
- * This method *must* be called before any other methods on the account class. It's automatically
- * performed by the endpoint, which should be how it's always used
- *
- * @param error pointer to an error
- * @return if the account was successfully created
- */
-- (BOOL)createWithError:(NSError * _Nullable * _Nullable)error;
-
-/**
  * Invoked on receiving a callback from PJSUA
  *
  * Internally, this method updates some internal structures and invokes the delegate of the
@@ -37,11 +26,25 @@
 - (void)handleRegistrationStateChange;
 
 /**
+ * Invoked by the endpoint when this account is receiving a new call
  *
+ * @param callId the PJSIP call identifier for the incoming call
+ * @param data   the incoming rxdata that can be parsed for headers
  */
 - (void)handleIncomingCall:(pjsua_call_id)callId data:(pjsip_rx_data * _Nonnull)data;
 
+/**
+ * Invoked by the endpoint when a call tracked by this account is updated
+ *
+ * @param callId the PJSIP call identifier for the call that was updated
+ */
 - (void)handleCallStateChange:(pjsua_call_id)callId;
+
+/**
+ * Invoked by the endpoint when a call tracked by this account has its media channels updated
+ *
+ * @param callId the PJSIP call identifier for the call that was updated
+ */
 - (void)handleCallMediaStateChange:(pjsua_call_id)callId;
 
 /**

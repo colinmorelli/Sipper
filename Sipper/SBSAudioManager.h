@@ -57,7 +57,7 @@
  * @param error       pointer to an error that will be updated if selection fails
  * @return whether or not audio device selection was successful
  */
-- (BOOL)selectAudioInputDevice:(SBSAudioDevice * _Nonnull)inputDevice error:(NSError **)error;
+- (BOOL)selectAudioInputDevice:(SBSAudioDevice * _Nonnull)inputDevice error:(NSError * _Nullable * _Nullable)error;
 
 /**
  * Selects the audio output device to use
@@ -69,7 +69,7 @@
  * @param error        pointer to an error that will be updated if selection fails
  * @return whether or not audio device selection was successful
  */
-- (BOOL)selectAudioOutputDevice:(SBSAudioDevice * _Nonnull)outputDevice error:(NSError **)error;
+- (BOOL)selectAudioOutputDevice:(SBSAudioDevice * _Nonnull)outputDevice error:(NSError * _Nullable * _Nullable )error;
 
 /**
  * The shared audio manager for the application

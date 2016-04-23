@@ -99,6 +99,14 @@
 
 - (void)setMuted:(BOOL)muted {
   _muted = muted;
+  [self updateAudioPorts];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)sendDigits:(NSString *)digits {
+  pj_str_t input_string = digits.pjString;
+  pjsua_call_dial_dtmf((int) _id, &input_string);
 }
 
 //------------------------------------------------------------------------------
@@ -127,16 +135,8 @@
   pjsua_call_info info;
   pjsua_call_get_info((int) _id, &info);
   
-  // Check if media is active and connect the ports
-  for (unsigned i = 0; i < info.media_cnt; i++) {
-    pjsua_call_media_info media = info.media[i];
-    
-    // If we have an active audio stream, connect the audio channels
-    if (media.type == PJMEDIA_TYPE_AUDIO && media.status == PJSUA_CALL_MEDIA_ACTIVE) {
-//      pjsua_conf_connect(media.stream.aud.conf_slot, 0);
-//      pjsua_conf_connect(0, media.stream.aud.conf_slot);
-    }
-  }
+  // Reconcile the appropriate mute state
+  [self reconcileMuteState:info];
   
   // Fire the event handler back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
@@ -149,7 +149,32 @@
 //------------------------------------------------------------------------------
 
 - (void)updateAudioPorts {
+  pjsua_call_info info;
+  pj_status_t status = pjsua_call_get_info((int) _id, &info);
+  if (status != PJ_SUCCESS) {
+    return;
+  }
+  
+  // Reconcile the appropriate audio states
+  [self reconcileMuteState:info];
+}
 
+- (void)reconcileMuteState:(pjsua_call_info)info {
+  for (unsigned i = 0; i < info.media_cnt; i++) {
+    pjsua_call_media_info media = info.media[i];
+    
+    // If we have an active audio stream, connect the audio channels
+    if (media.type == PJMEDIA_TYPE_AUDIO && media.status == PJSUA_CALL_MEDIA_ACTIVE) {
+      pjsua_conf_connect(media.stream.aud.conf_slot, 0);
+      
+      // Only connect the microphone to the output if we're not muted
+      if (!_muted) {
+        pjsua_conf_connect(0, media.stream.aud.conf_slot);
+      } else {
+        pjsua_conf_disconnect(0, media.stream.aud.conf_slot);
+      }
+    }
+  }
 }
 
 //------------------------------------------------------------------------------
