@@ -50,6 +50,13 @@
  */
 - (void)handleCallMediaStateChange;
 
+/**
+ * Invoked when a call's transaction state changes
+ *
+ * @param transaction the transaction whose state was changed
+ */
+- (void)handleTransactionStateChange:(pjsip_transaction *)transaction;
+
 @end
 
 #endif

@@ -120,6 +120,10 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   [self.calls[@(callId)] handleCallMediaStateChange];
 }
 
+- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *)transaction {
+  [self.calls[@(callId)] handleTransactionStateChange:transaction];
+}
+
 //------------------------------------------------------------------------------
 #pragma mark - Converters
 //------------------------------------------------------------------------------

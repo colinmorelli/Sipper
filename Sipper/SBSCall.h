@@ -154,12 +154,23 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
 - (void)answerWithStatus:(SBSStatusCode)code;
 
 /**
- * Hangs up the current call
+ * Hangs up this call with a 603 Decline status code
  *
  * This method can be invoked on a call that is not currently answered. If it is, the call will be
  * explicitly declined.
  */
 - (void)hangup;
+
+/**
+ * Places the call on hold
+ *
+ * Note that holds are not guaranteed to work. They require the endpoint to support parking the call,
+ * and need to wait for acceptance of the park status. As a result, hold's are required to function
+ * asynchronously.
+ *
+ * @param callback a callback that will be invoked when the hold response is received
+ */
+//- (void)holdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Sends the requested digits as DTMF tones

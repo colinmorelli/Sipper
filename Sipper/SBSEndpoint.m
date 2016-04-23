@@ -18,9 +18,11 @@
 
 static NSString * const EndpointErrorDomain = @"sipper.endpoint.error";
 
+static void onRegState(pjsua_acc_id accountId);
 static void onCallState(pjsua_call_id callId, pjsip_event *event);
-static void onIncomingCall(pjsua_acc_id acc_id, pjsua_call_id call_id, pjsip_rx_data *rdata);
-static void onCallMediaState(pjsua_call_id call_id);
+static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata);
+static void onCallMediaState(pjsua_call_id callId);
+static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_event *event);
 
 @interface SBSEndpoint ()
 
@@ -170,6 +172,7 @@ static void onCallMediaState(pjsua_call_id call_id);
   config->cb.on_incoming_call    = &onIncomingCall;
   config->cb.on_call_state       = &onCallState;
   config->cb.on_call_media_state = &onCallMediaState;
+  config->cb.on_call_tsx_state   = &onCallTsxState;
   
   config->max_calls = (unsigned int) configuration.maxCalls;
 }
@@ -219,6 +222,26 @@ static void onCallMediaState(pjsua_call_id call_id);
 #pragma mark - PJSUA Callbacks
 //------------------------------------------------------------------------------
 
+static void onRegState(pjsua_acc_id accountId) {
+  void *data = pjsua_acc_get_user_data(accountId);
+  if (data == NULL) {
+    return;
+  }
+  
+  SBSAccount *account = (__bridge SBSAccount *) data;
+  [account handleRegistrationStateChange];
+}
+
+static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata) {
+  void *data = pjsua_acc_get_user_data(accountId);
+  if (data == NULL) {
+    return;
+  }
+  
+  SBSAccount *account = (__bridge SBSAccount *) data;
+  [account handleIncomingCall:callId data:rdata];
+}
+
 static void onCallState(pjsua_call_id callId, pjsip_event *event) {
   void *data = pjsua_call_get_user_data(callId);
   if (data == NULL) {
@@ -239,24 +262,14 @@ static void onCallMediaState(pjsua_call_id callId) {
   [call.account handleCallMediaStateChange:callId];
 }
 
-static void onRegState(pjsua_acc_id accountId) {
-  void *data = pjsua_acc_get_user_data(accountId);
+static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_event *event) {
+  void *data = pjsua_call_get_user_data(callId);
   if (data == NULL) {
     return;
   }
   
-  SBSAccount *account = (__bridge SBSAccount *) data;
-  [account handleRegistrationStateChange];
-}
-
-static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata) {
-  void *data = pjsua_acc_get_user_data(accountId);
-  if (data == NULL) {
-    return;
-  }
-  
-  SBSAccount *account = (__bridge SBSAccount *) data;
-  [account handleIncomingCall:callId data:rdata];
+  SBSCall *call = (__bridge SBSCall *) data;
+  [call.account handleCallTsxStateChange:callId transation:tsx];
 }
 
 @end

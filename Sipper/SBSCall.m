@@ -144,6 +144,14 @@
   });
 }
 
+- (void)handleTransactionStateChange:(pjsip_transaction *)transaction {
+  
+  // Check and see if we had a transport error, and drop the call if so
+  if (transaction->transport_err != PJ_SUCCESS) {
+    pjsua_call_hangup((int) _id, PJSIP_SC_TSX_TRANSPORT_ERROR, NULL, NULL);
+  }
+}
+
 //------------------------------------------------------------------------------
 #pragma mark - Media State
 //------------------------------------------------------------------------------

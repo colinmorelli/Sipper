@@ -48,6 +48,14 @@
 - (void)handleCallMediaStateChange:(pjsua_call_id)callId;
 
 /**
+ * Invoked by the endpoint when a call's TSX transaction status changes
+ *
+ * @param callId      the PJSIP call identifier for the call whose transaction changed
+ * @param transaction the transaction that was updated during this call
+ */
+- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction * _Nonnull)transaction;
+
+/**
  * Attempts to create a new account and returns the account instance
  *
  * @param configuration the account configuration to use
