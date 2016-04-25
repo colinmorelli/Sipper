@@ -9,6 +9,7 @@
 #import "SBSCall+Internal.h"
 
 #import <pjsua.h>
+#import <pjsua-lib/pjsua_internal.h>
 
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
@@ -165,7 +166,9 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   
   // And invoke the delegate method back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
-    [self.delegate call:self didChangeState:_state];
+    if ([self.delegate respondsToSelector:@selector(call:didChangeState:)]) {
+      [self.delegate call:self didChangeState:_state];
+    }
   });
 }
 
@@ -181,8 +184,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     // Reconcile the appropriate mute state
     [self reconcileMuteState:info];
     
-    // Invoke the delegate handler her
-    [self.delegate callDidChangeMediaState:self];
+    // Invoke the delegate handler here
+    if ([self.delegate respondsToSelector:@selector(callDidChangeMediaState:)]) {
+      [self.delegate callDidChangeMediaState:self];
+    }
   });
 }
 
@@ -236,7 +241,56 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 + (instancetype)outgoingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId {
-  return [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionOutbound];
+  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionOutbound];
+  pjsip_inv_session *inv = pjsua_var.calls[callId].inv;
+  pjsip_msg *msg = inv->invite_tsx->last_tx->msg;
+  pjsip_hdr *hdr = msg->hdr.next,
+            *end = &msg->hdr;
+  
+  // Iterate over all of the headers, push to dictionary
+  for (; hdr != end; hdr = hdr->next) {
+    NSString *headerName = [NSString stringWithPJString:hdr->name];
+    char value[512] = {0};
+    
+    // Where we go next depends on the type of header
+    if (hdr->type == PJSIP_H_FROM) {
+      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
+      
+      // Make sure we have a URI, and print it into the header vlaue
+      if (header->uri != NULL) {
+        char uri[512] = {0};
+        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
+        call.from = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
+      }
+    } else if (hdr->type == PJSIP_H_TO) {
+      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
+      
+      // Make sure we have a URI, and print it into the header vlaue
+      if (header->uri != NULL) {
+        char uri[512] = {0};
+        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
+        call.to = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
+      }
+    }
+    
+    // If we weren't able to read the string in 512 bytes... (we should fix this)
+    if (hdr->vptr->print_on(hdr, value, 512) == -1) {
+      continue;
+    }
+    
+    // Always append the raw header value, even if we did something else above
+    NSString *headerValue = [[NSString alloc] initWithCString:value encoding:NSUTF8StringEncoding];
+    NSRange splitRange = [headerValue rangeOfString:@":"];
+    
+    // Strip out the header name from the value
+    if (splitRange.location != NSNotFound) {
+      headerValue = [[headerValue substringFromIndex:splitRange.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    }
+    
+    [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
+  }
+  
+  return call;
 }
 
 + (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {

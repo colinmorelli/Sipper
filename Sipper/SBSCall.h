@@ -78,7 +78,9 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
   SBSCallErrorCannotHangup
 };
 
-@protocol SBSCallDelegate
+@protocol SBSCallDelegate<NSObject>
+
+@optional
 
 /**
  * Invoked when the call changes its current call state

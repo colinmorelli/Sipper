@@ -134,6 +134,7 @@
 				E78E588C1CC7C06000FDA80D /* Categories */,
 				E78E58821CC7B98300FDA80D /* Configuration */,
 				E79D73D21CC9939D00400F86 /* Model */,
+				E78E57041CC7B50900FDA80D /* Sipper.h */,
 				E78E586F1CC7B63200FDA80D /* SBSAccount.h */,
 				E78E586D1CC7B62300FDA80D /* SBSAccount.m */,
 				E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */,
@@ -145,7 +146,6 @@
 				E70D56601CC8FF3200348D97 /* SBSConstants.h */,
 				E7CDED141CC815730007C4E5 /* SBSEndpoint.h */,
 				E7CDED151CC815730007C4E5 /* SBSEndpoint.m */,
-				E78E57041CC7B50900FDA80D /* Sipper.h */,
 			);
 			path = Sipper;
 			sourceTree = "<group>";

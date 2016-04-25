@@ -75,6 +75,11 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 //------------------------------------------------------------------------------
 
 - (void)callWithDestination:(NSString *)destination completion:(void (^)(BOOL, SBSCall *, NSError *))completion {
+  SBSSipURI *uri = [SBSSipURI sipUriWithString:destination];
+  if (uri == nil) {
+    destination = [NSString stringWithFormat:@"sip:%@@%@", destination, self.configuration.sipDomain];
+  }
+  
   [self.endpoint performAsync:^{
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
