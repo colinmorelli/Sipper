@@ -7,8 +7,11 @@
 //
 
 #import "SBSEndpointConfiguration.h"
-#import "SBSTransportConfiguration.h"
+
 #import <pjsua.h>
+
+#import "SBSTransportConfiguration.h"
+#import "SBSCodecDescriptor.h"
 
 static NSUInteger const EndpointConfigurationMaxCalls = 4;
 static NSUInteger const EndpointConfigurationLogLevel = 5;
@@ -19,20 +22,24 @@ static NSUInteger const EndpointConfigurationSndClockRate = 0;
 
 @implementation SBSEndpointConfiguration
 
+//------------------------------------------------------------------------------
+
 - (instancetype)init {
   if (self = [super init]) {
-    self.maxCalls = EndpointConfigurationMaxCalls;
+    _maxCalls = EndpointConfigurationMaxCalls;
     
-    self.logLevel = EndpointConfigurationLogLevel;
-    self.logConsoleLevel = EndpointConfigurationLogConsoleLevel;
-    self.logFilename = EndpointConfigurationLogFileName;
-    self.logFileFlags = PJ_O_APPEND;
+    _logLevel = EndpointConfigurationLogLevel;
+    _logConsoleLevel = EndpointConfigurationLogConsoleLevel;
+    _logFilename = EndpointConfigurationLogFileName;
+    _logFileFlags = PJ_O_APPEND;
     
-    self.clockRate = EndpointConfigurationClockRate;
-    self.sndClockRate = EndpointConfigurationSndClockRate;
+    _clockRate = EndpointConfigurationClockRate;
+    _sndClockRate = EndpointConfigurationSndClockRate;
   }
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 - (NSArray *)transportConfigurations {
   if (!_transportConfigurations) {
@@ -41,15 +48,21 @@ static NSUInteger const EndpointConfigurationSndClockRate = 0;
   return _transportConfigurations;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)setLogLevel:(NSUInteger)logLevel {
   NSAssert(logLevel > 0, @"Log level needs to be set higher than 0");
   _logLevel = logLevel;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)setLogConsoleLevel:(NSUInteger)logConsoleLevel {
   NSAssert(logConsoleLevel > 0, @"Console log level needs to be higher than 0");
   _logConsoleLevel = logConsoleLevel;
 }
+
+//------------------------------------------------------------------------------
 
 - (BOOL)hasTCPConfiguration {
   NSUInteger index = [self.transportConfigurations indexOfObjectPassingTest:^BOOL(SBSTransportConfiguration *transportConfiguration, NSUInteger idx, BOOL *stop) {

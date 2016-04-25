@@ -64,6 +64,20 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
   SBSCallDirectionInbound
 };
 
+/**
+ *  Possible errors the call can return.
+ */
+typedef NS_ENUM(NSInteger, SBSCallError) {
+  /**
+   *  Unable to answer the call
+   */
+  SBSCallErrorCannotAnswer,
+  /**
+   *  Unable to hangup the call
+   */
+  SBSCallErrorCannotHangup
+};
+
 @protocol SBSCallDelegate
 
 /**
@@ -137,11 +151,16 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
  * Answers the call with a 200 OK status code
  *
  * This is a convenience method for the alternative ANSWER implementation that takes a status code. 
- * Alternative methods can be used to send pre-media to the caller. 
+ * Alternative methods can be used to send pre-media to the caller.
  *
- * You probably want to have a delegate set before calling this method.
+ * Note that the callback provided to this method will be invoked when we receive a result from sending
+ * the answer. This *does not* mean that the call has actually been answered or connected. In order to
+ * receive those events, you should attach a delegate to the call and observe for the call state change
+ * events
+ *
+ * @param callback callback to invoke on completion
  */
-- (void)answer;
+- (void)answerWithCompletion:(void (^ _Nullable)(BOOL success, NSError * _Nullable))callback;
 
 /**
  * Answers the call with the requested status code
@@ -149,17 +168,25 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
  * You probably want to have a delegate set before calling this method. You won't receive delegate
  * methods until you do.
  *
+ * Note that the callback provided to this method will be invoked when we receive a result from sending
+ * the answer. This *does not* mean that the call has actually been answered or connected. In order to
+ * receive those events, you should attach a delegate to the call and observe for the call state change
+ * events
+ *
  * @param code the status code to answer the call with
+ * @param callback callback to invoke on completion
  */
-- (void)answerWithStatus:(SBSStatusCode)code;
+- (void)answerWithStatus:(SBSStatusCode)code completion:(void (^ _Nullable)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Hangs up this call with a 603 Decline status code
  *
  * This method can be invoked on a call that is not currently answered. If it is, the call will be
  * explicitly declined.
+ *
+ * @param callback callback to invoke on success
  */
-- (void)hangup;
+- (void)hangupWithCompletion:(void (^ _Nullable)(BOOL success, NSError * _Nullable))callback;
 
 /**
  * Places the call on hold

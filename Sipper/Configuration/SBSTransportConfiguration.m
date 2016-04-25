@@ -13,6 +13,8 @@ static NSInteger const TransportConfigurationPortRange = 0;
 
 @implementation SBSTransportConfiguration
 
+//------------------------------------------------------------------------------
+
 - (instancetype)init {
   if (self = [super init]) {
     self.port = TransportConfigurationPort;
@@ -21,6 +23,8 @@ static NSInteger const TransportConfigurationPortRange = 0;
   }
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 + (instancetype)configurationWithTransportType:(SBSTransportType)transportType {
   SBSTransportConfiguration *transportConfiguration = [[SBSTransportConfiguration alloc] init];

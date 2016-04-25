@@ -14,6 +14,7 @@
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
 
+#import "SBSAccountConfiguration.h"
 #import "SBSCall+Internal.h"
 #import "SBSEndpoint.h"
 #import "SBSEndpointConfiguration.h"
@@ -50,6 +51,8 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   pjsua_acc_set_user_data((int) _id, (__bridge void *)(self));
 }
 
+//------------------------------------------------------------------------------
+
 - (void)dealloc {
   pjsua_acc_set_user_data((int) _id, NULL);
 }
@@ -57,8 +60,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 //------------------------------------------------------------------------------
 
 - (void)startRegistration {
-  
-  // Start the registration process
   pj_status_t status = pjsua_acc_set_registration((int) self.id, PJ_TRUE);
   if (status != PJ_SUCCESS) {
     NSError *error = [NSError ErrorWithUnderlying:nil
@@ -69,6 +70,35 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
     
     [self.delegate account:self registrationDidFailWithError:error];
   }
+}
+
+//------------------------------------------------------------------------------
+
+- (void)callWithDestination:(NSString *)destination completion:(void (^)(BOOL, SBSCall *, NSError *))completion {
+  [self.endpoint performAsync:^{
+    pjsua_call_setting setting;
+    pjsua_call_setting_default(&setting);
+    
+    pjsua_call_id id;
+    pj_str_t dst = destination.pjString;
+    pj_status_t status = pjsua_call_make_call((int) _id, &dst, &setting, NULL, NULL, &id);
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status != PJ_SUCCESS) {
+        NSError *error = [NSError ErrorWithUnderlying:nil
+                              localizedDescriptionKey:NSLocalizedString(@"Could not create outbound call", nil)
+                          localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                          errorDomain:AccountErrorDomain
+                                            errorCode:SBSAccountErrorCannotRegister];
+        
+        completion(NO, nil, error);
+        return;
+      }
+      
+      SBSCall *call = self.calls[@(id)] = [SBSCall outgoingCallWithAccount:self callId:id];
+      completion(YES, call, nil);
+    });
+  }];
 }
 
 //------------------------------------------------------------------------------
@@ -93,6 +123,8 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   });
 }
 
+//------------------------------------------------------------------------------
+
 - (void)handleIncomingCall:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
   SBSCall *call = [SBSCall incomingCallWithAccount:self callId:callId data:data];
   self.calls[@(call.id)] = call;
@@ -101,6 +133,8 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
     [self.delegate account:self didReceiveIncomingCall:call];
   });
 }
+
+//------------------------------------------------------------------------------
 
 - (void)handleCallStateChange:(pjsua_call_id)callId {
   SBSCall *call = self.calls[@(callId)];
@@ -116,9 +150,13 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   }
 }
 
+//------------------------------------------------------------------------------
+
 - (void)handleCallMediaStateChange:(pjsua_call_id)callId {
   [self.calls[@(callId)] handleCallMediaStateChange];
 }
+
+//------------------------------------------------------------------------------
 
 - (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *)transaction {
   [self.calls[@(callId)] handleTransactionStateChange:transaction];

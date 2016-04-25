@@ -12,9 +12,13 @@
 
 @implementation SBSNameAddressPair
 
+//------------------------------------------------------------------------------
+
 - (instancetype)initWithAddress:(SBSSipURI *)uri {
   return [self initWithDisplayName:nil uri:uri];
 }
+
+//------------------------------------------------------------------------------
 
 - (instancetype)initWithDisplayName:(NSString *)name uri:(SBSSipURI *)uri {
   if (self = [super init]) {
@@ -24,6 +28,8 @@
   
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 + (instancetype)nameAddressPairFromString:(NSString *)string {
   if (string == nil) {

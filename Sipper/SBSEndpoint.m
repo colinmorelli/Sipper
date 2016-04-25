@@ -13,6 +13,7 @@
 
 #import "SBSAccount+Internal.h"
 #import "SBSCall+Internal.h"
+#import "SBSCodecDescriptor.h"
 #import "SBSEndpointConfiguration.h"
 #import "SBSTransportConfiguration.h"
 
@@ -26,6 +27,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 @interface SBSEndpoint ()
 
+@property (strong, nonatomic) NSThread *backgroundThread;
 @property (strong, nonatomic) NSMutableDictionary *accounts;
 
 @end
@@ -36,6 +38,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 - (instancetype)init {
   if (self = [super init]) {
+    _backgroundThread = [[NSThread alloc] initWithTarget:self selector:@selector(threadRunLoop:) object:nil];
+    _backgroundThread.threadPriority = DISPATCH_QUEUE_PRIORITY_BACKGROUND;
     _accounts = [[NSMutableDictionary alloc] init];
   }
   
@@ -45,7 +49,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 //------------------------------------------------------------------------------
 
 - (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration *)configuration error:(NSError *__autoreleasing *)error {
-  pj_status_t status;
+  __block pj_status_t status;
   
   // Create a new instance of PJSUA. The default instance will be thread-confined to the thread it was created on. However,
   // background queues can be used if they're registered with the endpoint.
@@ -85,7 +89,6 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     pjsua_transport_config transport_config;
     pjsip_transport_type_e transport_type = [self convertTransportType:transportConfiguration.transportType];
     [self convertTransportConfiguration:transportConfiguration config:&transport_config];
-    NSLog(@"%d", transport_type);
     
     pjsua_transport_id transport_id;
     status = pjsua_transport_create(transport_type, &transport_config, &transport_id);
@@ -112,7 +115,27 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     return NO;
   }
   
-  // Update the configuration that is in use
+  // Start the background thread
+  [_backgroundThread start];
+  
+  // Perform a block to register the background thread
+  [self performSelector:@selector(performAsyncWithBlock:) onThread:_backgroundThread withObject:^{
+    pj_thread_desc thread_desc;
+    pj_thread_t *thread = 0;
+    status = pj_thread_register("background", thread_desc, &thread);
+  } waitUntilDone:YES];
+  
+  // Make sure thread creation was successful
+  if (status != PJ_SUCCESS) {
+    [self destroyEndpointWithError:nil];
+    *error = [NSError ErrorWithUnderlying:nil
+                  localizedDescriptionKey:NSLocalizedString(@"Could not register thread", nil)
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                              errorDomain:EndpointErrorDomain
+                                errorCode:SBSEndpointErrorCannotRegisterThread];
+    return NO;
+  }
+    // Update the configuration that is in use
   _configuration = configuration;
   
   // We're successful if we didn't set an error pointer
@@ -129,6 +152,19 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 //------------------------------------------------------------------------------
 
+- (BOOL)codecDescriptor:(SBSCodecDescriptor *)descriptor matchesIdentifier:(NSString *)identifier {
+  NSArray<NSString *> *parts = [identifier componentsSeparatedByString:@"/"];
+  NSString *encodingName = parts[0];
+  NSUInteger samplingRate = [parts[1] integerValue];
+  NSUInteger numberOfChannels = [parts[2] integerValue];
+  
+  return [encodingName isEqualToString:descriptor.encoding]
+          && (descriptor.samplingRate == 0 || descriptor.samplingRate == samplingRate)
+          && (descriptor.numberOfChannels == 0 || descriptor.numberOfChannels == numberOfChannels);
+}
+
+//------------------------------------------------------------------------------
+
 - (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError *__autoreleasing *)error {
   SBSAccount *account = [SBSAccount accountWithConfiguration:configuration endpoint:self error:error];
   
@@ -139,6 +175,118 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   
   // Successful creation, register the account with sipper
   return self.accounts[@(account.id)] = account;
+}
+
+//------------------------------------------------------------------------------
+
+- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> *)descriptors error:(NSError *__autoreleasing  _Nullable *)error {
+  pj_status_t status;
+  
+  const unsigned codec_info_size = 64;
+  unsigned codec_count = codec_info_size;
+  pjsua_codec_info codec_info[codec_info_size];
+  
+  status = pjsua_enum_codecs(codec_info, &codec_count);
+  if (status != PJ_SUCCESS) {
+    *error = [NSError ErrorWithUnderlying:nil
+                  localizedDescriptionKey:NSLocalizedString(@"Could not register thread", nil)
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                              errorDomain:EndpointErrorDomain
+                                errorCode:SBSEndpointErrorCannotRegisterThread];
+    return NO;
+  }
+  
+  // Push all codecs into a codec list
+  NSMutableSet<NSString *> *unmatchedCodecs = [[NSMutableSet alloc] init];
+  NSUInteger attachedCodecs = 0;
+  for (NSUInteger i = 0; i < codec_count; i++) {
+    [unmatchedCodecs addObject:[NSString stringWithPJString:codec_info[i].codec_id]];
+  }
+  
+  // Now, iterate over our preferred codecs map and find matches
+  for (SBSCodecDescriptor *descriptor in descriptors) {
+    
+    // Find any matching codecs in the result
+    for (NSUInteger i = 0; i < codec_count; i++) {
+      NSString *codecIdentifier = [NSString stringWithPJString:codec_info[i].codec_id];
+      
+      // Stop here if this codec doesn't match
+      if (![self codecDescriptor:descriptor matchesIdentifier:codecIdentifier]) {
+        continue;
+      }
+      
+      // This codec had a match, we can pull it out of the unmatched list
+      [unmatchedCodecs removeObject:codecIdentifier];
+      
+      // And, assign this codec's priority from the number of codecs we've already assigned
+      pj_uint8_t priority = PJMEDIA_CODEC_PRIO_HIGHEST - attachedCodecs++;
+      NSLog(@"Codec %@ matches codec descriptor %@, assigning priority %d", codecIdentifier, descriptor, priority);
+      status = pjsua_codec_set_priority(&codec_info[i].codec_id, priority
+                                        );
+      if (status != PJ_SUCCESS) {
+        *error = [NSError ErrorWithUnderlying:nil
+                      localizedDescriptionKey:NSLocalizedString(@"Could not register thread", nil)
+                  localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                  errorDomain:EndpointErrorDomain
+                                    errorCode:SBSEndpointErrorCannotRegisterThread];
+        return NO;
+      }
+    }
+    
+  }
+  
+  // Disable any remaining unmatched codecs
+  for (NSString *codecIdentifier in unmatchedCodecs) {
+    NSLog(@"Codec %@ not found in priority list, disabling", codecIdentifier);
+    
+    pj_str_t codec_identifier = codecIdentifier.pjString;
+    status = pjsua_codec_set_priority(&codec_identifier, 0);
+    if (status != PJ_SUCCESS) {
+      *error = [NSError ErrorWithUnderlying:nil
+                    localizedDescriptionKey:NSLocalizedString(@"Could not register thread", nil)
+                localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                errorDomain:EndpointErrorDomain
+                                  errorCode:SBSEndpointErrorCannotRegisterThread];
+      return NO;
+    }
+  }
+  
+  return YES;
+}
+
+//------------------------------------------------------------------------------
+
+- (SBSAccount *)findAccount:(NSUInteger)id {
+  return self.accounts[@(id)];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)performAsync:(void (^)())block {
+  [self performSelector:@selector(performAsyncWithBlock:) onThread:_backgroundThread withObject:[block copy] waitUntilDone:NO];
+}
+
+- (void)performAsyncWithBlock:(void (^)())block {
+  block();
+}
+
+- (void)threadRunLoop:(id)object {
+  @autoreleasepool {
+    NSThread *thread = [NSThread currentThread];
+    NSRunLoop *currentRunLoop = [NSRunLoop currentRunLoop];
+    
+    // If we dont register a mach port with the run loop, it will just exit immediately
+    [currentRunLoop addPort: [NSPort port] forMode: NSRunLoopCommonModes];
+    
+    // Just loop until the thread is cancelled.
+    while (!thread.cancelled) {
+      [currentRunLoop runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+    }
+    
+    // Cleanup when we're done
+    [currentRunLoop removePort:[NSPort port] forMode: NSRunLoopCommonModes];
+    [[NSPort port] invalidate];
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -165,6 +313,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   config->log_file_flags = (unsigned int) configuration.logFileFlags;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)extractEndpointConfiguration:(SBSEndpointConfiguration *)configuration config:(pjsua_config *)config {
   pjsua_config_default(config);
   
@@ -177,6 +327,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   config->max_calls = (unsigned int) configuration.maxCalls;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)extractMediaConfiguration:(SBSEndpointConfiguration *)configuration config:(pjsua_media_config *)config {
   pjsua_media_config_default(config);
   
@@ -184,12 +336,16 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   config->snd_clock_rate = (unsigned int) configuration.sndClockRate;
 }
 
+//------------------------------------------------------------------------------
+
 - (void)convertTransportConfiguration:(SBSTransportConfiguration *)configuration config:(pjsua_transport_config *)config {
   pjsua_transport_config_default(config);
   
   config->port       = (unsigned int) configuration.port;
   config->port_range = (unsigned int) configuration.portRange;
 }
+
+//------------------------------------------------------------------------------
 
 - (pjsip_transport_type_e)convertTransportType:(SBSTransportType)type {
   switch (type) {

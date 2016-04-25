@@ -10,6 +10,8 @@
 
 @implementation SBSAccountConfiguration
 
+//------------------------------------------------------------------------------
+
 - (instancetype) init {
   if (self = [super init]) {
     self.sipAuthRealm = @"*";
@@ -19,6 +21,8 @@
   
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 - (NSString *)sipAddress {
   if (self.sipAccount && self.sipDomain) {

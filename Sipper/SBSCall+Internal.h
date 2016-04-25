@@ -26,6 +26,16 @@
 + (instancetype _Nonnull)incomingCallWithAccount:(SBSAccount * _Nonnull)account callId:(pjsua_call_id)callId data:(pjsip_rx_data * _Nonnull)data;
 
 /**
+ * Creates a new instance of a call wrapper from the incoming PJSIP call
+ *
+ * @param callId     the identifier for the call
+ * @param account    the account instance that this call is for
+ * @param direction  the direction of the call
+ * @return new call instance
+ */
++ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount * _Nonnull)account callId:(pjsua_call_id)callId;
+
+/**
  * Attempts to look up a call instance using PJSUA call identifiers
  *
  * @param callId the callId to lookup
@@ -55,7 +65,7 @@
  *
  * @param transaction the transaction whose state was changed
  */
-- (void)handleTransactionStateChange:(pjsip_transaction *)transaction;
+- (void)handleTransactionStateChange:(pjsip_transaction * _Nonnull)transaction;
 
 @end
 

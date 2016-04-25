@@ -11,6 +11,12 @@
 #import <pjsua.h>
 
 #import "NSString+PJString.h"
+#import "NSError+SipperError.h"
+
+#import "SBSAccount.h"
+#import "SBSEndpoint.h"
+
+static NSString * const CallErrorDomain = @"sipper.account.call";
 
 @interface SBSCall ()
 
@@ -47,40 +53,72 @@
   [self handleCallMediaStateChange];
 }
 
+//------------------------------------------------------------------------------
+
 - (void)dealloc {
   pjsua_call_set_user_data((int) _id, NULL);
 }
 
 //------------------------------------------------------------------------------
 
-- (void)answer {
-  [self answerWithStatus:SBSStatusCodeOk];
+- (void)answerWithCompletion:(void (^)(BOOL, NSError *))callback {
+  [self answerWithStatus:SBSStatusCodeOk completion:callback];
 }
 
 //------------------------------------------------------------------------------
 
-- (void)answerWithStatus:(SBSStatusCode)code {
-  
-  // No-op if we're not in a valid call state for this action
-  if (_state != SBSCallStateEarly && _state != SBSCallStateIncoming) {
-    return;
+- (void)answerWithStatus:(SBSStatusCode)code completion:(void (^ _Nullable)(BOOL, NSError *))callback {
+  if (callback == nil) {
+    callback = ^(BOOL success, NSError *error) { };
   }
   
-  // Otherwise try to accept the call - we should be confident that this works now
-  pjsua_call_answer((int) _id, (pjsip_status_code) code, NULL, NULL);
+  [self.account.endpoint performAsync:^{
+    pj_status_t status = pjsua_call_answer((int) _id, (pjsip_status_code) code, NULL, NULL);
+    
+    // Execute the remaining method back in the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status == PJ_SUCCESS) {
+        callback(YES, nil);
+        return;
+      }
+      
+      // Made it here, we got a non-successful response code
+      NSError *error = [NSError ErrorWithUnderlying:nil
+                            localizedDescriptionKey:NSLocalizedString(@"Could not answer the call", nil)
+                        localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                        errorDomain:CallErrorDomain
+                                          errorCode:SBSCallErrorCannotAnswer];
+      callback(NO, error);
+    });
+  }];
 }
 
 //------------------------------------------------------------------------------
 
-- (void)hangup {
-  
-  // If we're in an unknown state, or already disconnected, we can't do this
-  if (_state == SBSCallStateUnknown || _state == SBSCallStateDisconnected) {
-    return;
+- (void)hangupWithCompletion:(void (^)(BOOL, NSError * _Nullable))callback {
+  if (callback == nil) {
+    callback = ^(BOOL success, NSError *error) { };
   }
   
-  // Otherwise hangup the call
-  pjsua_call_hangup((int) _id, PJSIP_SC_DECLINE, NULL, NULL);
+  [self.account.endpoint performAsync:^{
+    pj_status_t status = pjsua_call_hangup((int) _id, PJSIP_SC_DECLINE, NULL, NULL);
+    
+    // Execute the remaining method back in the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status == PJ_SUCCESS) {
+        callback(YES, nil);
+        return;
+      }
+      
+      // Made it here, we got a non-successful response code
+      NSError *error = [NSError ErrorWithUnderlying:nil
+                            localizedDescriptionKey:NSLocalizedString(@"Could not hangup the call", nil)
+                        localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                        errorDomain:CallErrorDomain
+                                          errorCode:SBSCallErrorCannotHangup];
+      callback(NO, error);
+    });
+  }];
 }
 
 //------------------------------------------------------------------------------
@@ -131,18 +169,24 @@
   });
 }
 
+//------------------------------------------------------------------------------
+
 - (void)handleCallMediaStateChange {
   pjsua_call_info info;
   pjsua_call_get_info((int) _id, &info);
   
-  // Reconcile the appropriate mute state
-  [self reconcileMuteState:info];
-  
   // Fire the event handler back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
+    
+    // Reconcile the appropriate mute state
+    [self reconcileMuteState:info];
+    
+    // Invoke the delegate handler her
     [self.delegate callDidChangeMediaState:self];
   });
 }
+
+//------------------------------------------------------------------------------
 
 - (void)handleTransactionStateChange:(pjsip_transaction *)transaction {
   
@@ -167,6 +211,8 @@
   [self reconcileMuteState:info];
 }
 
+//------------------------------------------------------------------------------
+
 - (void)reconcileMuteState:(pjsua_call_info)info {
   for (unsigned i = 0; i < info.media_cnt; i++) {
     pjsua_call_media_info media = info.media[i];
@@ -188,6 +234,10 @@
 //------------------------------------------------------------------------------
 #pragma mark - Factory
 //------------------------------------------------------------------------------
+
++ (instancetype)outgoingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId {
+  return [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionOutbound];
+}
 
 + (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
   SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionInbound];
@@ -240,6 +290,8 @@
   
   return call;
 }
+
+//------------------------------------------------------------------------------
 
 + (instancetype)fromCallId:(pjsua_call_id)callId {
   void *data = pjsua_call_get_user_data(callId);

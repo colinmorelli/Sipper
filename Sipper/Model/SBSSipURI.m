@@ -10,6 +10,8 @@
 
 @implementation SBSSipURI
 
+//------------------------------------------------------------------------------
+
 - (instancetype)initWithAccount:(NSString *)account password:(NSString *)password host:(NSString *)host port:(NSNumber *)port params:(NSString *)params {
   if (self = [super init]) {
     _account = account;
@@ -21,6 +23,8 @@
   
   return self;
 }
+
+//------------------------------------------------------------------------------
 
 + (instancetype)sipUriWithString:(NSString *)uri {
   if (uri == nil) {

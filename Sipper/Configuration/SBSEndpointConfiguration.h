@@ -75,7 +75,7 @@
 /**
  *  An array which will hold all the configured transports.
  */
-@property (strong, nonatomic) NSArray *transportConfigurations;
+@property (strong, nonatomic, nonnull) NSArray *transportConfigurations;
 
 /**
  *  To check if the endpoint has a tcp configuration.

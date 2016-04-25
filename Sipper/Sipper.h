@@ -10,6 +10,7 @@
 
 #import "SBSAccount.h"
 #import "SBSAccountConfiguration.h"
+#import "SBSCodecDescriptor.h"
 #import "SBSEndpoint.h"
 #import "SBSEndpointConfiguration.h"
 #import "SBSTransportConfiguration.h"

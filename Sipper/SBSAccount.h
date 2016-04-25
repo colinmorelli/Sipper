@@ -9,9 +9,10 @@
 #ifndef SBSAccount_h
 #define SBSAccount_h
 
-#import "SBSAccountConfiguration.h"
+#import <Foundation/Foundation.h>
 
 @class SBSAccount;
+@class SBSAccountConfiguration;
 @class SBSCall;
 @class SBSEndpoint;
 
@@ -97,6 +98,14 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 @property (readonly, nonatomic) NSUInteger id;
 
 /**
+ * Pointer back to the endpoint that owns this account
+ *
+ * This pointer is weak to avoid a retain cycle. Endpoints have a strong reference to all of
+ * their registered accounts.
+ */
+@property (readonly, weak, nonatomic, nullable) SBSEndpoint *endpoint;
+
+/**
  * Pointer to the configuration that was used when constructing this object
  *
  * Note that this property is readonly. While the configuration object itself has mutable properties,
@@ -122,6 +131,19 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * an opportunity to attach delegates to the SBSAccount and avoid race conditions
  */
 - (void)startRegistration;
+
+/**
+ * Creates a new call to the requested target destination
+ *
+ * New calls created from this method will immediately send their invite to the remote. It's possible that you
+ * miss some delegate methods, as you're not able to attach the delegate fast enough. As a result, it's recommended
+ * to always read call state from the SBSCall's ivars to reconcile anything that was missed
+ *
+ * @param destination the destination in the form of a SIP URI to make this call to
+ * @param error       pointer to an error in case the call can't be made
+ * @return a new call instance
+ */
+- (void)callWithDestination:(NSString * _Nonnull)destination completion:(void (^ _Nonnull)(BOOL, SBSCall * _Nullable, NSError * _Nullable))completion;
 
 @end
 

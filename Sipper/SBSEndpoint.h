@@ -14,6 +14,7 @@
 @class SBSAccount;
 @class SBSAccountConfiguration;
 @class SBSAudioManager;
+@class SBSCodecDescriptor;
 @class SBSEndpointConfiguration;
 
 /**
@@ -39,7 +40,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
   /**
    *  Unable to create the thread for pjsip.
    */
-  SBSEndpointErrorCannotCreateThread,
+  SBSEndpointErrorCannotRegisterThread,
   /**
    *  Unable to cleanly destroy the endpoint on shutdown.
    */
@@ -48,6 +49,9 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
 
 @interface SBSEndpoint : NSObject
 
+/**
+ * The configuration that this endpoint was initialized with
+ */
 @property (strong, nonatomic, readonly) SBSEndpointConfiguration *configuration;
 
 /**
@@ -88,6 +92,14 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
 - (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError **)error;
 
 /**
+ * Returns the account associated with the requested account ID
+ *
+ * @param id the account ID to find
+ * @return the account associated with that ID, if it exists
+ */
+- (SBSAccount *)findAccount:(NSUInteger)id;
+
+/**
  * Returns the audio manager associated with this endpoint
  *
  * You can use the audio manager to configure input/output devices for handling call audio. Note that the
@@ -97,6 +109,27 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @returns the audio manager that controls local audio devices
  */
 - (SBSAudioManager *)audioManager;
+
+/**
+ * Updates the codec priorities for the endpoint
+ *
+ * Note that calling this method will not affect any calls that are currently active. Those calls must be explicitly re-negotiated
+ * in the instance of SBSCall
+ *
+ * @param descriptors new codec descriptors to assign
+ * @param error       error pointer to assign if the oepration fails
+ * @return if the operation was successful
+ */
+- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> *)descriptors error:(NSError * _Nullable * _Nullable)error;
+
+/**
+ * Executes the requested block in a background thread that is safe for the endpoint
+ *
+ * This method will execute the requested task in a thread that is safely registered with the underlying SIP provider. This
+ * allows background operations to be safely executed. Instances of SBSEndpoint must be invoked either on the main thread,
+ * or using this method.
+ */
+- (void)performAsync:(void (^ _Nonnull)())block;
 
 /**
  * Returns the static shared endpoint
