@@ -348,6 +348,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 - (void)reconcileState {
   @synchronized (self) {
     AVAudioSession *session = [AVAudioSession sharedInstance];
+    AVAudioSessionCategoryOptions options = 0;
     NSString *category = nil;
     NSArray<SBSCall *> *calls = self.calls;
     NSUInteger activeCalls = 0,
@@ -360,11 +361,13 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
         ringingCalls++;
       }
     }
-    
+
+#if TARGET_OS_IPHONE
     // First, we check to see if we have any active calls. This is always the highest
     // priority category to assign
     if (activeCalls > 0) {
       category = AVAudioSessionCategoryPlayAndRecord;
+      options = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth | AVAudioSessionCategoryOptionMixWithOthers;
     } else if (ringingCalls > 0) {
       category = AVAudioSessionCategorySoloAmbient;
     }
@@ -372,18 +375,15 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     // Assign a category if we had one to assign
     if (category != nil) {
       NSError *error;
-      NSLog(@"Attempting to update audio category to: %@", category);
       
       // Attempt to update the audio category
-      if (![session setCategory:category withOptions:0 error:&error]) {
-        NSLog(@"Failed to update audio category with error: %@", error);
+      if (![session setCategory:category withOptions:options error:&error]) {
+        self.configuration.loggingCallback(SBSLogLevelWarn, @"Failed to update audio category");
       }
     }
     
     // Also, if we have active calls, enable proximity sensor
-#if TARGET_OS_IPHONE
     [UIDevice currentDevice].proximityMonitoringEnabled = activeCalls > 0;
-    NSLog(@"Proximity enabled: %@", [UIDevice currentDevice].proximityMonitoringEnabled ? @"YES" : @"NO");
 #endif
   }
 }
