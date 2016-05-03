@@ -15,13 +15,16 @@
 #import "NSError+SipperError.h"
 
 #import "SBSAccount.h"
+#import "SBSNameAddressPair.h"
 #import "SBSEndpoint.h"
+#import "SBSRingtonePlayer.h"
 
 static NSString * const CallErrorDomain = @"sipper.account.call";
 
 @interface SBSCall ()
 
 @property (strong, nonatomic) NSMutableDictionary *headers;
+@property (strong, nonatomic) SBSRingtonePlayer *player;
 
 @end
 
@@ -57,6 +60,7 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)dealloc {
+  NSLog(@"call de-alloced");
   pjsua_call_set_user_data((int) _id, NULL);
 }
 
@@ -71,6 +75,12 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 - (void)answerWithStatus:(SBSStatusCode)code completion:(void (^ _Nullable)(BOOL, NSError *))callback {
   if (callback == nil) {
     callback = ^(BOOL success, NSError *error) { };
+  }
+  
+  // Stop the ringtone if it's currently playing and we have a response code
+  // that justifies stopping it
+  if (code != SBSStatusCodeProgress && code != SBSStatusCodeRinging) {
+    [self.player stop];
   }
   
   [self.account.endpoint performAsync:^{
@@ -96,11 +106,29 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 
 //------------------------------------------------------------------------------
 
+- (void)ring {
+  if (self.ringtone == nil) {
+    return;
+  }
+  
+  // Start playing the ringtone - note that we don't worry about audio categories here. That is
+  // managed by the endpoint, to ensure we don't clobber audio sessions that would be required by
+  // other active calls.
+  self.player = [[SBSRingtonePlayer alloc] initWithRingtone:self.ringtone];
+  [self.player play];
+}
+
+//------------------------------------------------------------------------------
+
 - (void)hangupWithCompletion:(void (^)(BOOL, NSError * _Nullable))callback {
   if (callback == nil) {
     callback = ^(BOOL success, NSError *error) { };
   }
   
+  // Stop the ringtone if it's currently playing
+  [self.player stop];
+  
+  // Answer the call in the appropriate thread (it doesn't happen immediately)
   [self.account.endpoint performAsync:^{
     pj_status_t status = pjsua_call_hangup((int) _id, PJSIP_SC_DECLINE, NULL, NULL);
     
@@ -162,6 +190,11 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     _state = SBSCallStateDisconnected;
   } else if (status == PJ_SUCCESS) {
     _state = [self convertState:info.state];
+  }
+  
+  // If the call state is not ringing, stop the ringtone player
+  if (self.state != SBSCallStateEarly && self.state != SBSCallStateIncoming) {
+    [self.player stop];
   }
   
   // And invoke the delegate method back on the main thread
@@ -252,26 +285,47 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     NSString *headerName = [NSString stringWithPJString:hdr->name];
     char value[512] = {0};
     
-    // Where we go next depends on the type of header
-    if (hdr->type == PJSIP_H_FROM) {
-      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
-      
-      // Make sure we have a URI, and print it into the header vlaue
-      if (header->uri != NULL) {
-        char uri[512] = {0};
-        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.from = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
-      }
-    } else if (hdr->type == PJSIP_H_TO) {
-      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
-      
-      // Make sure we have a URI, and print it into the header vlaue
-      if (header->uri != NULL) {
-        char uri[512] = {0};
-        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.to = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
-      }
+    // If we weren't able to read the string in 512 bytes... (we should fix this)
+    if (hdr->vptr->print_on(hdr, value, 512) == -1) {
+      continue;
     }
+    
+    // Always append the raw header value, even if we did something else above
+    NSString *headerValue = [[NSString alloc] initWithCString:value encoding:NSUTF8StringEncoding];
+    NSRange splitRange = [headerValue rangeOfString:@":"];
+    
+    // Strip out the header name from the value
+    if (splitRange.location != NSNotFound) {
+      headerValue = [[headerValue substringFromIndex:splitRange.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    }
+    
+    [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
+  }
+  
+  // Check for from/to headers
+  NSString *from = [call.headers valueForKey:@"from"];
+  if (from != nil) {
+    call.local = [SBSNameAddressPair nameAddressPairFromString:from];
+  }
+  
+  NSString *to = [call.headers valueForKey:@"to"];
+  if (to != nil) {
+    call.remote = [SBSNameAddressPair nameAddressPairFromString:to];
+  }
+  
+  return call;
+}
+
++ (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
+  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionInbound];
+  pjsip_msg *msg = data->msg_info.msg;
+  pjsip_hdr *hdr = msg->hdr.next,
+            *end = &msg->hdr;
+  
+  // Iterate over all of the headers, push to dictionary
+  for (; hdr != end; hdr = hdr->next) {
+    NSString *headerName = [NSString stringWithPJString:hdr->name];
+    char value[512] = {0};
     
     // If we weren't able to read the string in 512 bytes... (we should fix this)
     if (hdr->vptr->print_on(hdr, value, 512) == -1) {
@@ -290,56 +344,15 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
   }
   
-  return call;
-}
-
-+ (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
-  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionInbound];
-  pjsip_msg *msg = data->msg_info.msg;
-  pjsip_hdr *hdr = msg->hdr.next,
-            *end = &msg->hdr;
+  // Check for from/to headers
+  NSString *from = [call.headers valueForKey:@"from"];
+  if (from != nil) {
+    call.remote = [SBSNameAddressPair nameAddressPairFromString:from];
+  }
   
-  // Iterate over all of the headers, push to dictionary
-  for (; hdr != end; hdr = hdr->next) {
-    NSString *headerName = [NSString stringWithPJString:hdr->name];
-    char value[512] = {0};
-    
-    // Where we go next depends on the type of header
-    if (hdr->type == PJSIP_H_FROM) {
-      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
-      
-      // Make sure we have a URI, and print it into the header vlaue
-      if (header->uri != NULL) {
-        char uri[512] = {0};
-        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.from = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
-      }
-    } else if (hdr->type == PJSIP_H_TO) {
-      pjsip_fromto_hdr *header = (pjsip_fromto_hdr *) hdr;
-      
-      // Make sure we have a URI, and print it into the header vlaue
-      if (header->uri != NULL) {
-        char uri[512] = {0};
-        header->uri->vptr->p_print(PJSIP_URI_IN_FROMTO_HDR, header->uri, uri, 512);
-        call.to = [SBSNameAddressPair nameAddressPairFromString:[[NSString alloc] initWithCString:uri encoding:NSUTF8StringEncoding]];
-      }
-    }
-
-    // If we weren't able to read the string in 512 bytes... (we should fix this)
-    if (hdr->vptr->print_on(hdr, value, 512) == -1) {
-      continue;
-    }
-    
-    // Always append the raw header value, even if we did something else above
-    NSString *headerValue = [[NSString alloc] initWithCString:value encoding:NSUTF8StringEncoding];
-    NSRange splitRange = [headerValue rangeOfString:@":"];
-    
-    // Strip out the header name from the value
-    if (splitRange.location != NSNotFound) {
-      headerValue = [[headerValue substringFromIndex:splitRange.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    }
-    
-    [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
+  NSString *to = [call.headers valueForKey:@"to"];
+  if (to != nil) {
+    call.local = [SBSNameAddressPair nameAddressPairFromString:to];
   }
   
   return call;

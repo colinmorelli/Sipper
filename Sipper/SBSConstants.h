@@ -12,6 +12,18 @@
 #import <Foundation/Foundation.h>
 
 /**
+ *  Available logging levels
+ */
+typedef NS_ENUM(NSInteger, SBSLogLevel) {
+  SBSLogLevelTrace = 6,
+  SBSLogLevelDebug = 5,
+  SBSLogLevelInfo  = 4,
+  SBSLogLevelWarn  = 3,
+  SBSLogLevelError = 2,
+  SBSLogLevelFatal = 1
+};
+
+/**
  *  Available SIP status codes
  */
 typedef NS_ENUM(NSInteger, SBSStatusCode) {

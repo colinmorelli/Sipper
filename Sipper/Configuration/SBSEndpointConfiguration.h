@@ -10,6 +10,9 @@
 #define SBSEndpointConfiguration_h
 
 #import <Foundation/Foundation.h>
+#import "SBSConstants.h"
+
+typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
 
 @interface SBSEndpointConfiguration : NSObject
 
@@ -42,7 +45,7 @@
  *
  *  Default value: nil
  */
-@property (strong, nonatomic) NSString *logFilename;
+@property (strong, nonatomic, nullable) NSString *logFilename;
 
 /**
  *  Additional flags to be given to pj_file_open() when opening the log file.
@@ -53,6 +56,14 @@
  *  Default value: PJ_O_APPEND
  */
 @property (nonatomic) NSUInteger logFileFlags;
+
+/**
+ * Block to invoke for each log message
+ *
+ * This method will only be invoked for log messages printed at a level higher than
+ * the configured level
+ */
+@property (strong, nonatomic, nullable) LoggingHandler loggingCallback;
 
 /**
  *  Clock rate to be applied to the conference bridge.
@@ -76,6 +87,13 @@
  *  An array which will hold all the configured transports.
  */
 @property (strong, nonatomic, nonnull) NSArray *transportConfigurations;
+
+/**
+ *  The thread priority to assign to the background thread that handles SIP manipulation.
+ *
+ *  Default value: 0.5
+ */
+@property (nonatomic) double backgroundThreadPriority;
 
 /**
  *  To check if the endpoint has a tcp configuration.

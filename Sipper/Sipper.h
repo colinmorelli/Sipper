@@ -13,6 +13,8 @@
 #import "SBSCodecDescriptor.h"
 #import "SBSEndpoint.h"
 #import "SBSEndpointConfiguration.h"
+#import "SBSNameAddressPair.h"
 #import "SBSTransportConfiguration.h"
 #import "SBSCall.h"
 #import "SBSConstants.h"
+#import "SBSRingtone.h"

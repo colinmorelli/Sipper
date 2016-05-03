@@ -23,6 +23,14 @@
 
 /* Begin PBXBuildFile section */
 		E70D565C1CC8F58600348D97 /* SBSCall.m in Sources */ = {isa = PBXBuildFile; fileRef = E70D565B1CC8F58600348D97 /* SBSCall.m */; };
+		E76D5FB71CD8FB1D002FC7FE /* SipperTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FB61CD8FB1D002FC7FE /* SipperTests.m */; };
+		E76D5FB91CD8FB1D002FC7FE /* libSipper.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E78E57011CC7B50900FDA80D /* libSipper.a */; };
+		E76D5FC11CD8FB51002FC7FE /* SBSNameAddressPairTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */; };
+		E7846FDE1CD674CE0064AD8E /* SBSRingtone.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */; };
+		E7846FE11CD680BD0064AD8E /* SBSRingtonePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */; };
+		E7846FE31CD681FC0064AD8E /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7846FE21CD681FC0064AD8E /* AVFoundation.framework */; };
+		E7846FEB1CD6E02F0064AD8E /* libPjsip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7846FEA1CD6E02F0064AD8E /* libPjsip.a */; };
+		E7846FED1CD6E03B0064AD8E /* libOpus.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7846FEC1CD6E03B0064AD8E /* libOpus.a */; };
 		E78E57051CC7B50900FDA80D /* Sipper.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = E78E57041CC7B50900FDA80D /* Sipper.h */; };
 		E78E586E1CC7B62300FDA80D /* SBSAccount.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E586D1CC7B62300FDA80D /* SBSAccount.m */; };
 		E78E58851CC7B99700FDA80D /* SBSAccountConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58841CC7B99700FDA80D /* SBSAccountConfiguration.m */; };
@@ -35,12 +43,21 @@
 		E79D73E01CCA861000400F86 /* SBSAudioDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73DF1CCA861000400F86 /* SBSAudioDevice.m */; };
 		E79D73E31CCA8CF500400F86 /* SBSAudioManager.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73E21CCA8CF500400F86 /* SBSAudioManager.m */; };
 		E79E5A871CCD58DC00260280 /* SBSCodecDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = E79E5A861CCD58DC00260280 /* SBSCodecDescriptor.m */; };
-		E7CDED061CC810110007C4E5 /* libPjsip.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED051CC810110007C4E5 /* libPjsip.a */; };
 		E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E7CDED151CC815730007C4E5 /* SBSEndpoint.m */; };
 		E7CDED1E1CC81AF90007C4E5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */; };
 		E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */; };
 		E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED211CC81B230007C4E5 /* CFNetwork.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E76D5FBA1CD8FB1D002FC7FE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E78E56F91CC7B50900FDA80D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E78E57001CC7B50900FDA80D;
+			remoteInfo = Sipper;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		E78E56FF1CC7B50900FDA80D /* CopyFiles */ = {
@@ -60,6 +77,17 @@
 		E70D565B1CC8F58600348D97 /* SBSCall.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCall.m; sourceTree = "<group>"; };
 		E70D565D1CC8F9F100348D97 /* SBSCall+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSCall+Internal.h"; sourceTree = "<group>"; };
 		E70D56601CC8FF3200348D97 /* SBSConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SBSConstants.h; sourceTree = "<group>"; };
+		E76D5FB41CD8FB1C002FC7FE /* SipperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SipperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E76D5FB61CD8FB1D002FC7FE /* SipperTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SipperTests.m; sourceTree = "<group>"; };
+		E76D5FB81CD8FB1D002FC7FE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSNameAddressPairTests.m; sourceTree = "<group>"; };
+		E7846FDC1CD674CE0064AD8E /* SBSRingtone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtone.h; sourceTree = "<group>"; };
+		E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSRingtone.m; sourceTree = "<group>"; };
+		E7846FDF1CD680BD0064AD8E /* SBSRingtonePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtonePlayer.h; sourceTree = "<group>"; };
+		E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSRingtonePlayer.m; sourceTree = "<group>"; };
+		E7846FE21CD681FC0064AD8E /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		E7846FEA1CD6E02F0064AD8E /* libPjsip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPjsip.a; path = out/pjsip/lib/libPjsip.a; sourceTree = "<group>"; };
+		E7846FEC1CD6E03B0064AD8E /* libOpus.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOpus.a; path = out/opus/lib/libOpus.a; sourceTree = "<group>"; };
 		E78E57011CC7B50900FDA80D /* libSipper.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSipper.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E78E57041CC7B50900FDA80D /* Sipper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sipper.h; sourceTree = "<group>"; };
 		E78E586D1CC7B62300FDA80D /* SBSAccount.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSAccount.m; sourceTree = "<group>"; };
@@ -85,7 +113,6 @@
 		E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SBSAccount+Internal.h"; sourceTree = "<group>"; };
 		E79E5A851CCD58DC00260280 /* SBSCodecDescriptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSCodecDescriptor.h; sourceTree = "<group>"; };
 		E79E5A861CCD58DC00260280 /* SBSCodecDescriptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCodecDescriptor.m; sourceTree = "<group>"; };
-		E7CDED051CC810110007C4E5 /* libPjsip.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPjsip.a; path = vendor/libPjsip.a; sourceTree = "<group>"; };
 		E7CDED141CC815730007C4E5 /* SBSEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSEndpoint.h; sourceTree = "<group>"; };
 		E7CDED151CC815730007C4E5 /* SBSEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSEndpoint.m; sourceTree = "<group>"; };
 		E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -94,29 +121,68 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		E76D5FB11CD8FB1C002FC7FE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E76D5FB91CD8FB1D002FC7FE /* libSipper.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E78E56FE1CC7B50900FDA80D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7846FE31CD681FC0064AD8E /* AVFoundation.framework in Frameworks */,
+				E7846FEB1CD6E02F0064AD8E /* libPjsip.a in Frameworks */,
+				E7846FED1CD6E03B0064AD8E /* libOpus.a in Frameworks */,
 				E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */,
 				E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */,
 				E7CDED1E1CC81AF90007C4E5 /* CoreAudio.framework in Frameworks */,
-				E7CDED061CC810110007C4E5 /* libPjsip.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		E78E56F81CC7B50900FDA80D = {
+		E76D5FB51CD8FB1D002FC7FE /* SipperTests */ = {
 			isa = PBXGroup;
 			children = (
-				E78E57021CC7B50900FDA80D /* Products */,
-				E78E57031CC7B50900FDA80D /* Sipper */,
+				E76D5FBF1CD8FB3F002FC7FE /* Model */,
+				E76D5FB61CD8FB1D002FC7FE /* SipperTests.m */,
+				E76D5FB81CD8FB1D002FC7FE /* Info.plist */,
+			);
+			path = SipperTests;
+			sourceTree = "<group>";
+		};
+		E76D5FBF1CD8FB3F002FC7FE /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */,
+			);
+			name = Model;
+			sourceTree = "<group>";
+		};
+		E7846FE91CD6E01F0064AD8E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E7846FEC1CD6E03B0064AD8E /* libOpus.a */,
+				E7846FEA1CD6E02F0064AD8E /* libPjsip.a */,
+				E7846FE21CD681FC0064AD8E /* AVFoundation.framework */,
 				E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */,
 				E7CDED211CC81B230007C4E5 /* CFNetwork.framework */,
 				E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */,
-				E7CDED051CC810110007C4E5 /* libPjsip.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		E78E56F81CC7B50900FDA80D = {
+			isa = PBXGroup;
+			children = (
+				E78E57031CC7B50900FDA80D /* Sipper */,
+				E76D5FB51CD8FB1D002FC7FE /* SipperTests */,
+				E7846FE91CD6E01F0064AD8E /* Frameworks */,
+				E78E57021CC7B50900FDA80D /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,6 +190,7 @@
 			isa = PBXGroup;
 			children = (
 				E78E57011CC7B50900FDA80D /* libSipper.a */,
+				E76D5FB41CD8FB1C002FC7FE /* SipperTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -146,6 +213,10 @@
 				E70D56601CC8FF3200348D97 /* SBSConstants.h */,
 				E7CDED141CC815730007C4E5 /* SBSEndpoint.h */,
 				E7CDED151CC815730007C4E5 /* SBSEndpoint.m */,
+				E7846FDC1CD674CE0064AD8E /* SBSRingtone.h */,
+				E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */,
+				E7846FDF1CD680BD0064AD8E /* SBSRingtonePlayer.h */,
+				E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */,
 			);
 			path = Sipper;
 			sourceTree = "<group>";
@@ -192,6 +263,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		E76D5FB31CD8FB1C002FC7FE /* SipperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E76D5FBE1CD8FB1D002FC7FE /* Build configuration list for PBXNativeTarget "SipperTests" */;
+			buildPhases = (
+				E76D5FB01CD8FB1C002FC7FE /* Sources */,
+				E76D5FB11CD8FB1C002FC7FE /* Frameworks */,
+				E76D5FB21CD8FB1C002FC7FE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E76D5FBB1CD8FB1D002FC7FE /* PBXTargetDependency */,
+			);
+			name = SipperTests;
+			productName = SipperTests;
+			productReference = E76D5FB41CD8FB1C002FC7FE /* SipperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		E78E57001CC7B50900FDA80D /* Sipper */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E78E570A1CC7B50900FDA80D /* Build configuration list for PBXNativeTarget "Sipper" */;
@@ -219,6 +308,9 @@
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = Sipper;
 				TargetAttributes = {
+					E76D5FB31CD8FB1C002FC7FE = {
+						CreatedOnToolsVersion = 7.3;
+					};
 					E78E57001CC7B50900FDA80D = {
 						CreatedOnToolsVersion = 7.3;
 					};
@@ -241,9 +333,20 @@
 			targets = (
 				E78E57001CC7B50900FDA80D /* Sipper */,
 				E7CDED2B1CC8229B0007C4E5 /* SipperUniversal */,
+				E76D5FB31CD8FB1C002FC7FE /* SipperTests */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E76D5FB21CD8FB1C002FC7FE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
 		E7B0A7181CC8634D00E93EB1 /* ShellScript */ = {
@@ -292,6 +395,15 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		E76D5FB01CD8FB1C002FC7FE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E76D5FC11CD8FB51002FC7FE /* SBSNameAddressPairTests.m in Sources */,
+				E76D5FB71CD8FB1D002FC7FE /* SipperTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E78E56FD1CC7B50900FDA80D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -301,11 +413,13 @@
 				E78E588B1CC7BC1700FDA80D /* SBSTransportConfiguration.m in Sources */,
 				E78E586E1CC7B62300FDA80D /* SBSAccount.m in Sources */,
 				E79E5A871CCD58DC00260280 /* SBSCodecDescriptor.m in Sources */,
+				E7846FE11CD680BD0064AD8E /* SBSRingtonePlayer.m in Sources */,
 				E78E58881CC7BACA00FDA80D /* SBSEndpointConfiguration.m in Sources */,
 				E78E588F1CC7C07500FDA80D /* NSString+PJString.m in Sources */,
 				E79D73D81CC9953800400F86 /* SBSSipURI.m in Sources */,
 				E79D73E01CCA861000400F86 /* SBSAudioDevice.m in Sources */,
 				E78E58921CC7C97000FDA80D /* NSError+SipperError.m in Sources */,
+				E7846FDE1CD674CE0064AD8E /* SBSRingtone.m in Sources */,
 				E79D73E31CCA8CF500400F86 /* SBSAudioManager.m in Sources */,
 				E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */,
 				E79D73D51CC993B300400F86 /* SBSNameAddressPair.m in Sources */,
@@ -314,7 +428,35 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		E76D5FBB1CD8FB1D002FC7FE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E78E57001CC7B50900FDA80D /* Sipper */;
+			targetProxy = E76D5FBA1CD8FB1D002FC7FE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		E76D5FBC1CD8FB1D002FC7FE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = SipperTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = cc.switchboard.SipperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		E76D5FBD1CD8FB1D002FC7FE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = SipperTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = cc.switchboard.SipperTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		E78E57081CC7B50900FDA80D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -404,10 +546,13 @@
 					"PJ_AUTOCONF=1",
 					"DEBUG=1",
 				);
-				HEADER_SEARCH_PATHS = "vendor/pjsip-include";
+				HEADER_SEARCH_PATHS = out/pjsip/include;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/vendor",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/out/pjsip/lib",
+					"$(PROJECT_DIR)/out/opus/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -419,10 +564,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
-				HEADER_SEARCH_PATHS = "vendor/pjsip-include";
+				HEADER_SEARCH_PATHS = out/pjsip/include;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/vendor",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/out/pjsip/lib",
+					"$(PROJECT_DIR)/out/opus/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -447,6 +595,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		E76D5FBE1CD8FB1D002FC7FE /* Build configuration list for PBXNativeTarget "SipperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E76D5FBC1CD8FB1D002FC7FE /* Debug */,
+				E76D5FBD1CD8FB1D002FC7FE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		E78E56FC1CC7B50900FDA80D /* Build configuration list for PBXProject "Sipper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

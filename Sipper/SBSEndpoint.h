@@ -52,7 +52,12 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
 /**
  * The configuration that this endpoint was initialized with
  */
-@property (strong, nonatomic, readonly) SBSEndpointConfiguration *configuration;
+@property (strong, nonatomic, readonly, nonnull) SBSEndpointConfiguration *configuration;
+
+/**
+ * All accounts that are currently registered with the endpoint
+ */
+@property (strong, nonatomic, readonly, nonnull) NSArray<SBSAccount *> *accounts;
 
 /**
  * Initializes the SIP endpoint
@@ -64,7 +69,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @param error         pointer to an error
  * @return if the initialization was successful
  */
-- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration *)configuration error:(NSError **)error;
+- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration * _Nonnull)configuration error:(NSError * _Nullable * _Nullable)error;
 
 /**
  * Destroys the underlying SIP endpoint
@@ -76,7 +81,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @param error pointer to an error
  * @return of the destroy was successful
  */
-- (BOOL)destroyEndpointWithError:(NSError **)error;
+- (BOOL)destroyEndpointWithError:(NSError * _Nullable * _Nullable)error;
 
 /**
  * Attempts to create and register an account with the endpoint
@@ -89,7 +94,18 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @param error         pointer to an error
  * @return a created account instance, if successful
  */
-- (SBSAccount *)createAccountWithConfiguration:(SBSAccountConfiguration *)configuration error:(NSError **)error;
+- (SBSAccount * _Nullable)createAccountWithConfiguration:(SBSAccountConfiguration * _Nonnull)configuration error:(NSError * _Nullable * _Nullable)error;
+
+/**
+ * Deregisters an account from the endpoint
+ *
+ * You should only call this method if you want to ensure the account is de-registered and removed from
+ * the endpoint so that it can't be used again until it's re-created. If you just temporarily want to pause
+ * an account, you can call stopRegistration on the account instance.
+ *
+ * @param id the identifier of the account
+ */
+- (void)removeAccount:(NSUInteger)id;
 
 /**
  * Returns the account associated with the requested account ID
@@ -97,7 +113,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @param id the account ID to find
  * @return the account associated with that ID, if it exists
  */
-- (SBSAccount *)findAccount:(NSUInteger)id;
+- (SBSAccount * _Nullable)findAccount:(NSUInteger)id;
 
 /**
  * Returns the audio manager associated with this endpoint
@@ -108,7 +124,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  *
  * @returns the audio manager that controls local audio devices
  */
-- (SBSAudioManager *)audioManager;
+- (SBSAudioManager * _Nullable)audioManager;
 
 /**
  * Updates the codec priorities for the endpoint
@@ -120,7 +136,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * @param error       error pointer to assign if the oepration fails
  * @return if the operation was successful
  */
-- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> *)descriptors error:(NSError * _Nullable * _Nullable)error;
+- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> * _Nonnull)descriptors error:(NSError * _Nullable * _Nullable)error;
 
 /**
  * Executes the requested block in a background thread that is safe for the endpoint
@@ -137,7 +153,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * Note that the SBSEndpoint returned from this method *is not* ready to be used until initializeEndpointWithConfiguration
  * is invoked on it.
  */
-+ (instancetype)sharedEndpoint;
++ (instancetype _Nonnull)sharedEndpoint;
 
 @end
 

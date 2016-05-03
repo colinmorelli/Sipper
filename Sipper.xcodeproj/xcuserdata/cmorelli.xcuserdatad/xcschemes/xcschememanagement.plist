@@ -9,6 +9,11 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>SipperTests.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
 		<key>SipperUniversal.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -18,6 +23,11 @@
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>E75BEFAF1CC8076600300FAD</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>E76D5FB31CD8FB1C002FC7FE</key>
 		<dict>
 			<key>primary</key>
 			<true/>

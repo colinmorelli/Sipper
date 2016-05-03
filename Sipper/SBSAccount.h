@@ -15,6 +15,7 @@
 @class SBSAccountConfiguration;
 @class SBSCall;
 @class SBSEndpoint;
+@class SBSRingtone;
 
 /**
  *  Different registration states for the account
@@ -48,7 +49,9 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
   SBSAccountErrorCannotRegister
 };
 
-@protocol SBSAccountDelegate
+@protocol SBSAccountDelegate <NSObject>
+
+@optional
 
 /**
  * Invoked when a new call is received
@@ -60,6 +63,14 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param call     information about the incoming call
  */
 - (void)account:(SBSAccount * _Nonnull)account didReceiveIncomingCall:(SBSCall * _Nonnull)call;
+
+/**
+ * Invoked when a new outbound call is made
+ *
+ * @param account  the account that the call was made from
+ * @param call     the call that was made
+ */
+- (void)account:(SBSAccount * _Nonnull)account didMakeOutgoingCall:(SBSCall * _Nonnull)call;
 
 /**
  * Invoked when the registration status of the sip account changes
@@ -122,6 +133,19 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 @property (weak, nonatomic, nullable) id<SBSAccountDelegate> delegate;
 
 /**
+ * The ringtone to use for incoming calls associated with this account
+ *
+ * Ringtones for individual calls can be overridden on a per-call basis in the SBSAccountDelegate by implementing
+ * didReceiveIncomingCall and setting call.ringtone on the call isntance
+ */
+@property (strong, nonatomic, nullable) SBSRingtone *ringtone;
+
+/**
+ * All active calls on this account
+ */
+@property (strong, nonatomic, nonnull, readonly) NSArray<SBSCall *> *calls;
+
+/**
  * Starts the account and registers with the endpoint
  *
  * The SBSAccount instance must be initialized using the createWithError method before it can be started. This
@@ -131,6 +155,26 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * an opportunity to attach delegates to the SBSAccount and avoid race conditions
  */
 - (void)startRegistration;
+
+/**
+ * Stops the account and removes its registration from the endpoint
+ *
+ * This method is a no-op if the account hasn't already started registering. Note that the effects of this method are
+ * not immedate, and are made on a best-attempt basis.
+ */
+- (void)stopRegistration;
+
+/**
+ * Updates the configuration for this account
+ *
+ * If this account has started registration, this method will unregister the current account, perform the configuration
+ * update, and register the new account. You will *not* receive any events relating to a failure in unregistration with
+ * the old credentials. If this is important to you, you should manually call stopRegistration and remove the account,
+ * then perform this update and re-start registration
+ *
+ * @param configuration the new configuration to use
+ */
+- (void)updateConfiguration:(SBSAccountConfiguration * _Nonnull)configuration;
 
 /**
  * Creates a new call to the requested target destination

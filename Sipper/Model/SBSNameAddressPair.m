@@ -42,9 +42,14 @@
                                                                                 error:nil];
   NSTextCheckingResult *result = [expression firstMatchInString:string options:0 range:NSMakeRange(0, string.length)];
   
-  // If we have no result, there's no valid pair here
+  // If we have no result, there's no valid pair here, fallback to just parsing a SIP URI
   if (result == nil) {
-    return nil;
+    SBSSipURI *uri = [SBSSipURI sipUriWithString:string];
+    if (uri == nil) {
+      return nil;
+    }
+    
+    return [[self alloc] initWithDisplayName:nil uri:uri];
   }
   
   // Otherwise, grab the name and address

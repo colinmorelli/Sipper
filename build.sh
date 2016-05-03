@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PJSIP_VERSION='2.4.5'
+export PJSIP_VERSION='trunk'
 export BASE_DIR=`pwd -P`
 export PRODUCT_NAME='libPjsip'
 export TARGET_DIR='vendor'
@@ -60,7 +60,12 @@ function svn_checkout() {
     BASE_URL="http://svn.pjsip.org/repos/pjproject"
 
     echo "Checking out version ${PJSIP_VERSION}"
-    CHECKOUT_URL="${BASE_URL}/tags/${PJSIP_VERSION}/"
+
+    if [ "$PJSIP_VERSION" = "trunk" ]; then
+        CHECKOUT_URL="${BASE_URL}/trunk"
+    else
+        CHECKOUT_URL="${BASE_URL}/tags/${PJSIP_VERSION}/"
+    fi
 
     rm -rf "$BASE_DIR/pjsip/src"
     svn export "${CHECKOUT_URL}" "${BASE_DIR}/pjsip/src/"
@@ -117,7 +122,7 @@ function _build() {
 
     cp "$BASE_DIR"/config_site.h "$BASE_DIR"/pjsip/src/pjlib/include/pj
     cd "$BASE_DIR"/pjsip/src
-    ARCH="-arch $1" ./configure-iphone 2>&1 > "$BASE_DIR"/pjsip/logs/$1.log
+    ARCH="-arch $1" ./configure-iphone --with-opus=/tmp/Opus-iOS/dependencies 2>&1 > "$BASE_DIR"/pjsip/logs/$1.log
 
     make dep 2>&1 >> "$BASE_DIR"/pjsip/logs/$1.log
     make clean 2>&1 >> "$BASE_DIR"/pjsip/logs/$1.log
@@ -160,12 +165,15 @@ function copy_headers() {
 
 # helper function used by copy_headers
 function copy_to_lib_dir() {
+  echo $1
     OLD_PATH=$1
     NEW_PATH=()
 
     PATH_PARTS=(`echo $1 | tr '/' '\n'`)
+    echo $PATH_PARTS
     for x in "${PATH_PARTS[@]}"; do
         if [ "$x" = "include" ] || [ "${#NEW_PATH[@]}" -ne "0" ]; then
+            echo $x
             NEW_PATH+=("$x")
         fi
     done
@@ -176,6 +184,8 @@ function copy_to_lib_dir() {
     d=$BASE_DIR/${TARGET_DIR}/pjsip-include/$(dirname $NEW_PATH)
     mkdir -p $d
     cp $OLD_PATH $d
+    echo $NEW_PATH
+    exit
 }
 
 export -f copy_to_lib_dir

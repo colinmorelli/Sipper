@@ -44,6 +44,14 @@
 + (instancetype _Nullable)fromCallId:(pjsua_call_id)callId;
 
 /**
+ * Starts ringing the call
+ *
+ * The call will stop ringing on its own when the answer or hangup methods or called, or when the active state of the call
+ * changes
+ */
+- (void)ring;
+
+/**
  * Invoked when the call state changes
  *
  * This method will update all internal state pointers and invoke the proper delegate methods. Note that once this

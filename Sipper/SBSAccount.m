@@ -18,13 +18,14 @@
 #import "SBSCall+Internal.h"
 #import "SBSEndpoint.h"
 #import "SBSEndpointConfiguration.h"
+#import "SBSSipURI.h"
 
 static NSString * const AccountErrorDomain = @"sipper.account.error";
 
 @interface SBSAccount ()
 
 @property (weak, nonatomic) SBSEndpoint *endpoint;
-@property (strong, nonnull) NSMutableDictionary *calls;
+@property (strong, readwrite, nonatomic, nonnull) NSMutableArray<SBSCall *> *calls;
 
 @end
 
@@ -36,7 +37,7 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   if (self = [super init]) {
     _id = accountId;
     _endpoint = endpoint;
-    _calls = [[NSMutableDictionary alloc] init];
+    _calls = [NSMutableArray array];
     _configuration = configuration;
     
     [self prepare];
@@ -68,7 +69,48 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
                                       errorDomain:AccountErrorDomain
                                         errorCode:SBSAccountErrorCannotRegister];
     
-    [self.delegate account:self registrationDidFailWithError:error];
+    if ([self.delegate respondsToSelector:@selector(account:registrationDidFailWithError:)]) {
+      [self.delegate account:self registrationDidFailWithError:error];
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+
+- (void)stopRegistration {
+  pj_status_t status = pjsua_acc_set_registration((int) self.id, PJ_FALSE);
+  if (status != PJ_SUCCESS) {
+    NSError *error = [NSError ErrorWithUnderlying:nil
+                          localizedDescriptionKey:NSLocalizedString(@"Could not register account", nil)
+                      localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                      errorDomain:AccountErrorDomain
+                                        errorCode:SBSAccountErrorCannotRegister];
+    
+    
+    if ([self.delegate respondsToSelector:@selector(account:registrationDidFailWithError:)]) {
+      [self.delegate account:self registrationDidFailWithError:error];
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+
+- (void)updateConfiguration:(SBSAccountConfiguration *)configuration {
+  pjsua_acc_config config;
+  [SBSAccount convertAccountConfiguration:configuration endpoint:_endpoint config:&config account:self];
+  
+  // Attempt to perform the account modification
+  pj_status_t status = pjsua_acc_modify((int) _id, &config);
+  if (status != PJ_SUCCESS) {
+    NSError *error = [NSError ErrorWithUnderlying:nil
+                          localizedDescriptionKey:NSLocalizedString(@"Could not update account configuration", nil)
+                      localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                      errorDomain:AccountErrorDomain
+                                        errorCode:SBSAccountErrorCannotRegister];
+    
+    if ([self.delegate respondsToSelector:@selector(account:registrationDidFailWithError:)]) {
+      [self.delegate account:self registrationDidFailWithError:error];
+    }
   }
 }
 
@@ -100,8 +142,13 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
         return;
       }
       
-      SBSCall *call = self.calls[@(id)] = [SBSCall outgoingCallWithAccount:self callId:id];
+      SBSCall *call = [SBSCall outgoingCallWithAccount:self callId:id];
+      [_calls addObject:call];
       completion(YES, call, nil);
+      
+      if ([self.delegate respondsToSelector:@selector(account:didMakeOutgoingCall:)]) {
+        [self.delegate account:self didMakeOutgoingCall:call];
+      }
     });
   }];
 }
@@ -118,12 +165,14 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   }
   
   dispatch_async(dispatch_get_main_queue(), ^{
-    if (PJSIP_IS_STATUS_IN_CLASS(info.status, 100) || PJSIP_IS_STATUS_IN_CLASS(info.status, 300)) {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateTrying withStatusCode:info.status];
-    } else if (PJSIP_IS_STATUS_IN_CLASS(info.status, 200)) {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateActive withStatusCode:info.status];
-    } else {
-      [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateInactive withStatusCode:info.status];
+    if ([self.delegate respondsToSelector:@selector(account:registrationDidChangeState:withStatusCode:)]) {
+      if (PJSIP_IS_STATUS_IN_CLASS(info.status, 100) || PJSIP_IS_STATUS_IN_CLASS(info.status, 300)) {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateTrying withStatusCode:info.status];
+      } else if (PJSIP_IS_STATUS_IN_CLASS(info.status, 200)) {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateActive withStatusCode:info.status];
+      } else {
+        [self.delegate account:self registrationDidChangeState:SBSAccountRegistrationStateInactive withStatusCode:info.status];
+      }
     }
   });
 }
@@ -132,17 +181,26 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 
 - (void)handleIncomingCall:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
   SBSCall *call = [SBSCall incomingCallWithAccount:self callId:callId data:data];
-  self.calls[@(call.id)] = call;
+  [_calls addObject:call];
   
+  // Set the default call ringtone from the account
+  call.ringtone = self.ringtone;
+  
+  // Invoke the delegate - ringtone may change after this so we call ring isndoe the delegate handler
   dispatch_async(dispatch_get_main_queue(), ^{
-    [self.delegate account:self didReceiveIncomingCall:call];
+    if ([self.delegate respondsToSelector:@selector(account:didReceiveIncomingCall:)]) {
+      [self.delegate account:self didReceiveIncomingCall:call];
+    }
+    
+    [call ring];
   });
 }
 
 //------------------------------------------------------------------------------
 
 - (void)handleCallStateChange:(pjsua_call_id)callId {
-  SBSCall *call = self.calls[@(callId)];
+  SBSCall *call = [self findCall:callId];
+  
   if (call == nil) {
     return;
   }
@@ -151,27 +209,40 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   
   // Cleanup if the resulting call state is disconnected
   if (call.state == SBSCallStateDisconnected) {
-    [self.calls removeObjectForKey:@(callId)];
+    NSLog(@"Call disconnected, cleaning up");
+    [_calls removeObject:call];
   }
 }
 
 //------------------------------------------------------------------------------
 
 - (void)handleCallMediaStateChange:(pjsua_call_id)callId {
-  [self.calls[@(callId)] handleCallMediaStateChange];
+  [[self findCall:callId] handleCallMediaStateChange];
 }
 
 //------------------------------------------------------------------------------
 
 - (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *)transaction {
-  [self.calls[@(callId)] handleTransactionStateChange:transaction];
+  [[self findCall:callId] handleTransactionStateChange:transaction];
+}
+
+//------------------------------------------------------------------------------
+
+- (SBSCall * _Nullable)findCall:(pjsua_call_id)callId {
+  for (SBSCall *call in _calls) {
+    if ((int) call.id == callId) {
+      return call;
+    }
+  }
+  
+  return nil;
 }
 
 //------------------------------------------------------------------------------
 #pragma mark - Converters
 //------------------------------------------------------------------------------
 
-+ (void)convertAccountConfiguration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint config:(pjsua_acc_config *)config {
++ (void)convertAccountConfiguration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint config:(pjsua_acc_config *)config account:(SBSAccount *)account {
   pjsua_acc_config_default(config);
   
   NSString *tcp = @"";
@@ -211,6 +282,11 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
     config->proxy_cnt = 1;
     config->proxy[0]  = [proxyUri stringByAppendingString:tcp].pjString;
   }
+  
+  // Attach user data if available
+  if (account != nil) {
+    config->user_data = (__bridge void *)account;
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -231,7 +307,7 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 + (instancetype _Nullable)accountWithConfiguration:(SBSAccountConfiguration * _Nonnull)configuration endpoint:(SBSEndpoint * _Nonnull)endpoint error:(NSError * _Nullable * _Nullable)error {
   int acc_id;
   pjsua_acc_config config;
-  [self convertAccountConfiguration:configuration endpoint:endpoint config:&config];
+  [self convertAccountConfiguration:configuration endpoint:endpoint config:&config account:nil];
   
   // Create the new account with PJSIP
   pj_status_t status = pjsua_acc_add(&config, PJ_TRUE, &acc_id);

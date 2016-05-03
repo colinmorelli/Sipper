@@ -8,6 +8,11 @@
 
 #import "SBSEndpoint.h"
 
+#if TARGET_OS_IPHONE
+#import <AVFoundation/AVFoundation.h>
+#import <UIKit/UIKit.h>
+#endif
+
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
 
@@ -19,6 +24,7 @@
 
 static NSString * const EndpointErrorDomain = @"sipper.endpoint.error";
 
+static void onLogMessage(int, const char *, int);
 static void onRegState(pjsua_acc_id accountId);
 static void onCallState(pjsua_call_id callId, pjsip_event *event);
 static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata);
@@ -28,7 +34,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 @interface SBSEndpoint ()
 
 @property (strong, nonatomic) NSThread *backgroundThread;
-@property (strong, nonatomic) NSMutableDictionary *accounts;
+@property (strong, nonatomic) NSMutableDictionary *accountsMap;
 
 @end
 
@@ -39,8 +45,9 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 - (instancetype)init {
   if (self = [super init]) {
     _backgroundThread = [[NSThread alloc] initWithTarget:self selector:@selector(threadRunLoop:) object:nil];
+    _backgroundThread.name = @"Sipper Background";
     _backgroundThread.threadPriority = DISPATCH_QUEUE_PRIORITY_BACKGROUND;
-    _accounts = [[NSMutableDictionary alloc] init];
+    _accountsMap = [[NSMutableDictionary alloc] init];
   }
   
   return self;
@@ -115,6 +122,10 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     return NO;
   }
   
+  // Assign a thread priority. Answering/hanging up/calling is done on this background thread, so you probably
+  // want a high thread priority to ensure the user isn't waiting on these actions to happen.
+  _backgroundThread.threadPriority = configuration.backgroundThreadPriority;
+  
   // Start the background thread
   [_backgroundThread start];
   
@@ -174,7 +185,16 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   }
   
   // Successful creation, register the account with sipper
-  return self.accounts[@(account.id)] = account;
+  return self.accountsMap[@(account.id)] = account;
+}
+
+//------------------------------------------------------------------------------
+
+- (void)removeAccount:(NSUInteger)id {
+  SBSAccount *account = self.accountsMap[@(id)];
+  
+  [account stopRegistration];
+  [self.accountsMap removeObjectForKey:@(id)];
 }
 
 //------------------------------------------------------------------------------
@@ -257,7 +277,26 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 //------------------------------------------------------------------------------
 
 - (SBSAccount *)findAccount:(NSUInteger)id {
-  return self.accounts[@(id)];
+  return self.accountsMap[@(id)];
+}
+
+//------------------------------------------------------------------------------
+
+- (NSArray<SBSAccount *> *)accounts {
+  return [self.accountsMap allValues];
+}
+
+//------------------------------------------------------------------------------
+
+- (NSArray<SBSCall *> *)calls {
+  NSMutableArray<SBSCall *> *calls = [[NSMutableArray alloc] init];
+  NSArray<SBSAccount *> *accounts = [self accounts];
+  
+  for (SBSAccount *account in accounts) {
+    [calls addObjectsFromArray:account.calls];
+  }
+  
+  return calls;
 }
 
 //------------------------------------------------------------------------------
@@ -266,9 +305,13 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   [self performSelector:@selector(performAsyncWithBlock:) onThread:_backgroundThread withObject:[block copy] waitUntilDone:NO];
 }
 
+//------------------------------------------------------------------------------
+
 - (void)performAsyncWithBlock:(void (^)())block {
   block();
 }
+
+//------------------------------------------------------------------------------
 
 - (void)threadRunLoop:(id)object {
   @autoreleasepool {
@@ -301,6 +344,51 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 }
 
 //------------------------------------------------------------------------------
+
+- (void)reconcileState {
+  @synchronized (self) {
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    NSString *category = nil;
+    NSArray<SBSCall *> *calls = self.calls;
+    NSUInteger activeCalls = 0,
+               ringingCalls = 0;
+    
+    for (SBSCall *call in calls) {
+      if (call.state == SBSCallStateActive || call.state == SBSCallStateConnecting || call.state == SBSCallStateCalling || call.direction == SBSCallDirectionOutbound) {
+        activeCalls++;
+      } else if (call.state == SBSCallStateIncoming || call.state == SBSCallStateEarly) {
+        ringingCalls++;
+      }
+    }
+    
+    // First, we check to see if we have any active calls. This is always the highest
+    // priority category to assign
+    if (activeCalls > 0) {
+      category = AVAudioSessionCategoryPlayAndRecord;
+    } else if (ringingCalls > 0) {
+      category = AVAudioSessionCategorySoloAmbient;
+    }
+    
+    // Assign a category if we had one to assign
+    if (category != nil) {
+      NSError *error;
+      NSLog(@"Attempting to update audio category to: %@", category);
+      
+      // Attempt to update the audio category
+      if (![session setCategory:category withOptions:0 error:&error]) {
+        NSLog(@"Failed to update audio category with error: %@", error);
+      }
+    }
+    
+    // Also, if we have active calls, enable proximity sensor
+#if TARGET_OS_IPHONE
+    [UIDevice currentDevice].proximityMonitoringEnabled = activeCalls > 0;
+    NSLog(@"Proximity enabled: %@", [UIDevice currentDevice].proximityMonitoringEnabled ? @"YES" : @"NO");
+#endif
+  }
+}
+
+//------------------------------------------------------------------------------
 #pragma mark - Converters
 //------------------------------------------------------------------------------
 
@@ -311,6 +399,10 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   config->console_level  = (unsigned int) configuration.logConsoleLevel;
   config->log_filename   = configuration.logFilename.pjString;
   config->log_file_flags = (unsigned int) configuration.logFileFlags;
+  
+  if (configuration.loggingCallback != nil) {
+    config->cb           = &onLogMessage;
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -378,6 +470,16 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 #pragma mark - PJSUA Callbacks
 //------------------------------------------------------------------------------
 
+static void onLogMessage(int level, const char *input, int length) {
+  SBSLogLevel convertedLevel = (SBSLogLevel) level;
+  NSString *string = [[NSString stringWithCString:input encoding:NSUTF8StringEncoding] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+  
+  LoggingHandler block = [SBSEndpoint sharedEndpoint].configuration.loggingCallback;
+  if (block != nil) {
+    block(convertedLevel, string);
+  }
+}
+
 static void onRegState(pjsua_acc_id accountId) {
   void *data = pjsua_acc_get_user_data(accountId);
   if (data == NULL) {
@@ -396,6 +498,7 @@ static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_r
   
   SBSAccount *account = (__bridge SBSAccount *) data;
   [account handleIncomingCall:callId data:rdata];
+  [account.endpoint reconcileState];
 }
 
 static void onCallState(pjsua_call_id callId, pjsip_event *event) {
@@ -406,6 +509,7 @@ static void onCallState(pjsua_call_id callId, pjsip_event *event) {
   
   SBSCall *call = (__bridge SBSCall *) data;
   [call.account handleCallStateChange:callId];
+  [call.account.endpoint reconcileState];
 }
 
 static void onCallMediaState(pjsua_call_id callId) {
@@ -416,6 +520,7 @@ static void onCallMediaState(pjsua_call_id callId) {
   
   SBSCall *call = (__bridge SBSCall *) data;
   [call.account handleCallMediaStateChange:callId];
+  [call.account.endpoint reconcileState];
 }
 
 static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_event *event) {

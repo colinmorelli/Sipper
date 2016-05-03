@@ -10,11 +10,12 @@
 #define SBSCall_h
 
 #import <Foundation/Foundation.h>
-#import "SBSAccount.h"
 #import "SBSConstants.h"
-#import "SBSNameAddressPair.h"
 
+@class SBSAccount;
 @class SBSCall;
+@class SBSNameAddressPair;
+@class SBSRingtone;
 
 /**
  *  Different valid call states
@@ -105,19 +106,19 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 @interface SBSCall : NSObject
 
 /**
- * Unique identifier for hte call
+ * Unique identifier for the call
  */
 @property (nonatomic) NSUInteger id;
 
 /**
- * The SIP URI that the call originated from
+ * The SIP URI for the local end of the call
  */
-@property (nonatomic, nullable) SBSNameAddressPair *from;
+@property (nonatomic, nullable) SBSNameAddressPair *local;
 
 /**
- * The SIP URI that the call is going to
+ * The SIP URI for the remote end of the call
  */
-@property (nonatomic, nullable) SBSNameAddressPair *to;
+@property (nonatomic, nullable) SBSNameAddressPair *remote;
 
 /**
  * All SIP headers present on the call
@@ -127,7 +128,12 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 /**
  * The account that this call belongs to
  */
-@property (strong, nonatomic, nonnull, readonly) SBSAccount *account;
+@property (weak, nonatomic, nullable, readonly) SBSAccount *account;
+
+/**
+ * The ringtone to play on this call
+ */
+@property (strong, nonatomic, nonnull) SBSRingtone *ringtone;
 
 /**
  * The direction of the call, can either be inbound or outbound
@@ -147,7 +153,7 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 /**
  * Delegate to receive call events
  */
-@property (nonatomic, nullable) id<SBSCallDelegate> delegate;
+@property (weak, nonatomic, nullable) id<SBSCallDelegate> delegate;
 
 /**
  * Answers the call with a 200 OK status code
