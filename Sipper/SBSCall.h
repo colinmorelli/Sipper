@@ -14,8 +14,29 @@
 
 @class SBSAccount;
 @class SBSCall;
+@class SBSMediaDescription;
 @class SBSNameAddressPair;
 @class SBSRingtone;
+
+/**
+ *  Different possible hold states
+ */
+typedef NS_ENUM(NSInteger, SBSHoldState) {
+  /**
+   * The call is not currently on hold
+   */
+  SBSHoldStateNone,
+  
+  /**
+   * The call is on hold by the local endpoint
+   */
+  SBSHoldStateLocal,
+  
+  /**
+   * The call is on hold by the remote endpoint
+   */
+  SBSHoldStateRemote
+};
 
 /**
  *  Different valid call states
@@ -76,7 +97,15 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
   /**
    *  Unable to hangup the call
    */
-  SBSCallErrorCannotHangup
+  SBSCallErrorCannotHangup,
+  /**
+   *  Unable to place the call on hold
+   */
+  SBSCallErrorCannotHold,
+  /**
+   *  Unable to take the call off of hold
+   */
+  SBSCallErrorCannotUnhold
 };
 
 @protocol SBSCallDelegate<NSObject>
@@ -97,9 +126,21 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  * This method will be invoked when any of the underlying media streams changes. It is on the application
  * to check the call's media descriptions to determine if there's anything relevant
  *
- * @param call   the call that was changed during this callback
+ * @param call         the call that was changed during this callback
+ * @param descriptions the media descriptions associated with this call
  */
-- (void)callDidChangeMediaState:(SBSCall * _Nonnull)call;
+- (void)call:(SBSCall * _Nonnull)call didChangeMediaState:(NSArray<SBSMediaDescription *> * _Nonnull)descriptions;
+
+/**
+ * Invoked when the hold state of the call changes
+ *
+ * You can implement this delegate method to receive callbacks when hold and unhold requests
+ * have been processed
+ *
+ * @param call   the call that was changed
+ * @param state  the hold state of the call
+ */
+- (void)call:(SBSCall * _Nonnull)call didChangeHoldState:(SBSHoldState)state;
 
 @end
 
@@ -144,6 +185,16 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  * The current state that the call is in
  */
 @property (nonatomic, readonly) SBSCallState state;
+
+/**
+ * The hold state for the call
+ */
+@property (nonatomic, readonly) SBSHoldState holdState;
+
+/**
+ * Array of media attached to the call
+ */
+@property (strong, nonnull, nonatomic, readonly) NSArray<SBSMediaDescription *> *media;
 
 /**
  * The current mute state of the call, can be set to place the call on mute
@@ -197,15 +248,37 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 - (void)hangupWithCompletion:(void (^ _Nullable)(BOOL success, NSError * _Nullable))callback;
 
 /**
+ * Hangs up this call with the requested status code
+ *
+ * This method can be invoked on a call that is not currently answered. If it is, the call will be
+ * explicitly declined.
+ *
+ * @param code     the status code to respond with
+ * @param callback callback to invoke on success
+ */
+- (void)hangupWithStatus:(SBSStatusCode)code completion:(void (^ _Nullable)(BOOL, NSError * _Nullable))callback;
+
+/**
  * Places the call on hold
  *
  * Note that holds are not guaranteed to work. They require the endpoint to support parking the call,
  * and need to wait for acceptance of the park status. As a result, hold's are required to function
  * asynchronously.
  *
- * @param callback a callback that will be invoked when the hold response is received
+ * @param callback a callback that will be invoked when the hold response is sent
  */
-//- (void)holdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
+- (void)holdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
+
+/**
+ * Unholds the call if it's currently on hold
+ *
+ * If the call is not currently on hold, this is a no-op. Note that you can't unhold a call on which
+ * hold hasn't been confirmed. You can verify if you're in a local hold by checking the aggregate
+ * mediaState property on a call
+ *
+ * @param callback a callback that will be invoked when the call is reinvited
+ */
+- (void)unholdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Sends the requested digits as DTMF tones

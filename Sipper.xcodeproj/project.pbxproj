@@ -26,6 +26,7 @@
 		E76D5FB71CD8FB1D002FC7FE /* SipperTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FB61CD8FB1D002FC7FE /* SipperTests.m */; };
 		E76D5FB91CD8FB1D002FC7FE /* libSipper.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E78E57011CC7B50900FDA80D /* libSipper.a */; };
 		E76D5FC11CD8FB51002FC7FE /* SBSNameAddressPairTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */; };
+		E76D5FC61CD971E7002FC7FE /* SBSMediaDescription.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FC51CD971E7002FC7FE /* SBSMediaDescription.m */; };
 		E7846FDE1CD674CE0064AD8E /* SBSRingtone.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */; };
 		E7846FE11CD680BD0064AD8E /* SBSRingtonePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */; };
 		E7846FE31CD681FC0064AD8E /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7846FE21CD681FC0064AD8E /* AVFoundation.framework */; };
@@ -81,6 +82,8 @@
 		E76D5FB61CD8FB1D002FC7FE /* SipperTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SipperTests.m; sourceTree = "<group>"; };
 		E76D5FB81CD8FB1D002FC7FE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSNameAddressPairTests.m; sourceTree = "<group>"; };
+		E76D5FC41CD971E7002FC7FE /* SBSMediaDescription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSMediaDescription.h; sourceTree = "<group>"; };
+		E76D5FC51CD971E7002FC7FE /* SBSMediaDescription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSMediaDescription.m; sourceTree = "<group>"; };
 		E7846FDC1CD674CE0064AD8E /* SBSRingtone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtone.h; sourceTree = "<group>"; };
 		E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSRingtone.m; sourceTree = "<group>"; };
 		E7846FDF1CD680BD0064AD8E /* SBSRingtonePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtonePlayer.h; sourceTree = "<group>"; };
@@ -252,6 +255,8 @@
 				E79D73DF1CCA861000400F86 /* SBSAudioDevice.m */,
 				E79E5A851CCD58DC00260280 /* SBSCodecDescriptor.h */,
 				E79E5A861CCD58DC00260280 /* SBSCodecDescriptor.m */,
+				E76D5FC41CD971E7002FC7FE /* SBSMediaDescription.h */,
+				E76D5FC51CD971E7002FC7FE /* SBSMediaDescription.m */,
 				E79D73D31CC993B300400F86 /* SBSNameAddressPair.h */,
 				E79D73D41CC993B300400F86 /* SBSNameAddressPair.m */,
 				E79D73D61CC9953800400F86 /* SBSSipURI.h */,
@@ -420,6 +425,7 @@
 				E79D73E01CCA861000400F86 /* SBSAudioDevice.m in Sources */,
 				E78E58921CC7C97000FDA80D /* NSError+SipperError.m in Sources */,
 				E7846FDE1CD674CE0064AD8E /* SBSRingtone.m in Sources */,
+				E76D5FC61CD971E7002FC7FE /* SBSMediaDescription.m in Sources */,
 				E79D73E31CCA8CF500400F86 /* SBSAudioManager.m in Sources */,
 				E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */,
 				E79D73D51CC993B300400F86 /* SBSNameAddressPair.m in Sources */,
@@ -602,6 +608,7 @@
 				E76D5FBD1CD8FB1D002FC7FE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		E78E56FC1CC7B50900FDA80D /* Build configuration list for PBXProject "Sipper" */ = {
 			isa = XCConfigurationList;

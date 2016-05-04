@@ -15,6 +15,7 @@
 #import "NSError+SipperError.h"
 
 #import "SBSAccount.h"
+#import "SBSMediaDescription.h"
 #import "SBSNameAddressPair.h"
 #import "SBSEndpoint.h"
 #import "SBSRingtonePlayer.h"
@@ -37,6 +38,7 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     _account = account;
     _id = callId;
     _direction = direction;
+    _media = [[NSArray alloc] init];
     _headers = [[NSMutableDictionary alloc] init];
     
     [self prepare];
@@ -60,7 +62,6 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)dealloc {
-  NSLog(@"call de-alloced");
   pjsua_call_set_user_data((int) _id, NULL);
 }
 
@@ -121,6 +122,12 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)hangupWithCompletion:(void (^)(BOOL, NSError * _Nullable))callback {
+  [self hangupWithStatus:SBSStatusCodeDecline completion:callback];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)hangupWithStatus:(SBSStatusCode)code completion:(void (^)(BOOL, NSError * _Nullable))callback {
   if (callback == nil) {
     callback = ^(BOOL success, NSError *error) { };
   }
@@ -130,7 +137,7 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   
   // Answer the call in the appropriate thread (it doesn't happen immediately)
   [self.account.endpoint performAsync:^{
-    pj_status_t status = pjsua_call_hangup((int) _id, PJSIP_SC_DECLINE, NULL, NULL);
+    pj_status_t status = pjsua_call_hangup((int) _id, (pjsip_status_code) code, NULL, NULL);
     
     // Execute the remaining method back in the main thread
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -145,6 +152,66 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
                         localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
                                         errorDomain:CallErrorDomain
                                           errorCode:SBSCallErrorCannotHangup];
+      callback(NO, error);
+    });
+  }];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)holdWithCallback:(void (^)(BOOL, NSError * _Nullable))callback {
+  if (callback == nil) {
+    callback = ^(BOOL success, NSError *error) { };
+  }
+  
+  [self.account.endpoint performAsync:^{
+    pj_status_t status = pjsua_call_set_hold2((int) _id, 0, NULL);
+    
+    // Execute the remaining method back in the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status == PJ_SUCCESS) {
+        callback(YES, nil);
+        return;
+      }
+      
+      // Made it here, we got a non-successful response code
+      NSError *error = [NSError ErrorWithUnderlying:nil
+                            localizedDescriptionKey:NSLocalizedString(@"Could not hold the call", nil)
+                        localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                        errorDomain:CallErrorDomain
+                                          errorCode:SBSCallErrorCannotHold];
+      callback(NO, error);
+    });
+  }];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)unholdWithCallback:(void (^)(BOOL, NSError * _Nullable))callback {
+  if (callback == nil) {
+    callback = ^(BOOL success, NSError *error) { };
+  }
+  
+  [self.account.endpoint performAsync:^{
+    pjsua_call_setting setting;
+    pjsua_call_setting_default(&setting);
+    
+    setting.flag = PJSUA_CALL_UNHOLD;
+    pj_status_t status = pjsua_call_reinvite2((int) _id, &setting, NULL);
+    
+    // Execute the remaining method back in the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status == PJ_SUCCESS) {
+        callback(YES, nil);
+        return;
+      }
+      
+      // Made it here, we got a non-successful response code
+      NSError *error = [NSError ErrorWithUnderlying:nil
+                            localizedDescriptionKey:NSLocalizedString(@"Could not unhold the call", nil)
+                        localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                        errorDomain:CallErrorDomain
+                                          errorCode:SBSCallErrorCannotUnhold];
       callback(NO, error);
     });
   }];
@@ -185,7 +252,8 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   pj_status_t status = pjsua_call_get_info((int) _id, &info);
   
   // Getting call info *will* fail when the call has been disconnected, so catch that
-  // and update as appropriate
+  // and update as appropriate. This is an unfortunate issue in pjsip that I don't
+  // have a clean solution for yet
   if (status == PJSIP_ESESSIONTERMINATED) {
     _state = SBSCallStateDisconnected;
   } else if (status == PJ_SUCCESS) {
@@ -211,15 +279,42 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   pjsua_call_info info;
   pjsua_call_get_info((int) _id, &info);
   
+  // Determine the hold state for the call
+  SBSHoldState holdState = SBSHoldStateNone;
+  NSMutableArray<SBSMediaDescription *> *descriptions = [[NSMutableArray alloc] init];
+  
+  // Calculate the aggregate media state
+  for (int i = 0; i < info.media_cnt; i++) {
+    pjsua_call_media_info media_info = info.media[i];
+    SBSMediaState state = [self convertMediaState:media_info.status];
+    SBSMediaDirection direction = [self convertMediaDirection:media_info.dir];
+    SBSMediaType type = [self convertMediaType:media_info.type];
+    
+    SBSMediaDescription *description = [[SBSMediaDescription alloc] initWithMediaType:type direction:direction state:state];
+    [descriptions addObject:description];
+  }
+  
+  // Updated media state for the call
+  _media = [descriptions copy];
+  
+  // Determine if the hold state changed
+  _holdState = holdState;
+  BOOL holdStateChanged = holdState != _holdState;
+  
   // Fire the event handler back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
     
     // Reconcile the appropriate mute state
     [self reconcileMuteState:info];
     
+    // Fire the hold state delegate handler if the hold state changed
+    if (holdStateChanged && [self.delegate respondsToSelector:@selector(call:didChangeHoldState:)]) {
+      [self.delegate call:self didChangeHoldState:holdState];
+    }
+    
     // Invoke the delegate handler here
-    if ([self.delegate respondsToSelector:@selector(callDidChangeMediaState:)]) {
-      [self.delegate callDidChangeMediaState:self];
+    if ([self.delegate respondsToSelector:@selector(call:didChangeMediaState:)]) {
+      [self.delegate call:self didChangeMediaState:_media];
     }
   });
 }
@@ -389,6 +484,49 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
       return SBSCallStateConnecting;
     case PJSIP_INV_STATE_DISCONNECTED:
       return SBSCallStateDisconnected;
+  }
+}
+
+- (SBSMediaState)convertMediaState:(pjsua_call_media_status)status {
+  switch (status) {
+    case PJSUA_CALL_MEDIA_NONE:
+      return SBSMediaStateNone;
+    case PJSUA_CALL_MEDIA_ACTIVE:
+      return SBSMediaStateActive;
+    case PJSUA_CALL_MEDIA_LOCAL_HOLD:
+      return SBSMediaStateLocalHold;
+    case PJSUA_CALL_MEDIA_REMOTE_HOLD:
+      return SBSMediaStateRemoteHold;
+    case PJSUA_CALL_MEDIA_ERROR:
+      return SBSMediaStateError;
+  }
+}
+
+- (SBSMediaType)convertMediaType:(pjmedia_type)type {
+  switch (type) {
+    case PJMEDIA_TYPE_NONE:
+      return SBSMediaTypeNone;
+    case PJMEDIA_TYPE_AUDIO:
+      return SBSMediaTypeAudio;
+    case PJMEDIA_TYPE_VIDEO:
+      return SBSMediaTypeVideo;
+    case PJMEDIA_TYPE_APPLICATION:
+      return SBSMediaTypeApplication;
+    case PJMEDIA_TYPE_UNKNOWN:
+      return SBSMediaTypeUnknown;
+  }
+}
+
+- (SBSMediaDirection)convertMediaDirection:(pjmedia_dir)direction {
+  switch (direction) {
+    case PJMEDIA_DIR_NONE:
+      return SBSMediaDirectionNone;
+    case PJMEDIA_DIR_ENCODING:
+      return SBSMediaDirectionOutbound;
+    case PJMEDIA_DIR_DECODING:
+      return SBSMediaDirectionInbound;
+    case PJMEDIA_DIR_ENCODING_DECODING:
+      return SBSMediaDirectionBidirectional;
   }
 }
 
