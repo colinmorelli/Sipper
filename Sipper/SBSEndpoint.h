@@ -116,17 +116,6 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
 - (SBSAccount * _Nullable)findAccount:(NSUInteger)id;
 
 /**
- * Returns the audio manager associated with this endpoint
- *
- * You can use the audio manager to configure input/output devices for handling call audio. Note that the
- * methods on SBAudioManager will affect all calls, as you're changing the input and output devices for the
- * local host.
- *
- * @returns the audio manager that controls local audio devices
- */
-- (SBSAudioManager * _Nullable)audioManager;
-
-/**
  * Updates the codec priorities for the endpoint
  *
  * Note that calling this method will not affect any calls that are currently active. Those calls must be explicitly re-negotiated
