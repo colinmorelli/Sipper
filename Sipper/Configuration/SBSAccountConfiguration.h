@@ -15,6 +15,12 @@ typedef NS_ENUM(NSInteger, SBSAuthenticationScheme) {
   SBSAuthenticationSchemeDigest
 };
 
+typedef NS_ENUM(NSInteger, SBSSecureMediaPolicy) {
+  SBSSecureMediaPolicyNone,
+  SBSSecureMediaPolicyOptional,
+  SBSSecureMediaPolicyRequired
+};
+
 @interface SBSAccountConfiguration : NSObject
 
 /**
@@ -60,6 +66,20 @@ typedef NS_ENUM(NSInteger, SBSAuthenticationScheme) {
  *  Default: digest
  */
 @property (nonatomic) SBSAuthenticationScheme sipAuthScheme;
+
+/**
+ *  The secure media policy
+ *
+ *  Default: optional
+ */
+@property (nonatomic) SBSSecureMediaPolicy secureMediaPolicy;
+
+/**
+ *  Sets the duration that registrations are active for before resetting
+ *
+ *  Default: 600 seconds
+ */
+@property (nonatomic) NSUInteger sipRegistrationLifetime;
 
 /**
  *  Sets the duration to wait when registration fails. Set to 0 to disable.

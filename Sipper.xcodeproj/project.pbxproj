@@ -27,6 +27,10 @@
 		E76D5FB91CD8FB1D002FC7FE /* libSipper.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E78E57011CC7B50900FDA80D /* libSipper.a */; };
 		E76D5FC11CD8FB51002FC7FE /* SBSNameAddressPairTests.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */; };
 		E76D5FC61CD971E7002FC7FE /* SBSMediaDescription.m in Sources */ = {isa = PBXBuildFile; fileRef = E76D5FC51CD971E7002FC7FE /* SBSMediaDescription.m */; };
+		E76D5FCB1CDD0FF3002FC7FE /* libCrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E76D5FC91CDD0FF2002FC7FE /* libCrypto.a */; };
+		E76D5FCC1CDD0FF3002FC7FE /* libSsl.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E76D5FCA1CDD0FF2002FC7FE /* libSsl.a */; };
+		E78396AF1CF10D4C0095E10E /* NSString+PJString.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E588E1CC7C07500FDA80D /* NSString+PJString.m */; };
+		E78396B01CF10D660095E10E /* NSError+SipperError.m in Sources */ = {isa = PBXBuildFile; fileRef = E78E58911CC7C97000FDA80D /* NSError+SipperError.m */; };
 		E7846FDE1CD674CE0064AD8E /* SBSRingtone.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */; };
 		E7846FE11CD680BD0064AD8E /* SBSRingtonePlayer.m in Sources */ = {isa = PBXBuildFile; fileRef = E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */; };
 		E7846FE31CD681FC0064AD8E /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7846FE21CD681FC0064AD8E /* AVFoundation.framework */; };
@@ -82,6 +86,8 @@
 		E76D5FC01CD8FB51002FC7FE /* SBSNameAddressPairTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSNameAddressPairTests.m; sourceTree = "<group>"; };
 		E76D5FC41CD971E7002FC7FE /* SBSMediaDescription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSMediaDescription.h; sourceTree = "<group>"; };
 		E76D5FC51CD971E7002FC7FE /* SBSMediaDescription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSMediaDescription.m; sourceTree = "<group>"; };
+		E76D5FC91CDD0FF2002FC7FE /* libCrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libCrypto.a; path = out/openssl/lib/libCrypto.a; sourceTree = "<group>"; };
+		E76D5FCA1CDD0FF2002FC7FE /* libSsl.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSsl.a; path = out/openssl/lib/libSsl.a; sourceTree = "<group>"; };
 		E7846FDC1CD674CE0064AD8E /* SBSRingtone.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtone.h; sourceTree = "<group>"; };
 		E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSRingtone.m; sourceTree = "<group>"; };
 		E7846FDF1CD680BD0064AD8E /* SBSRingtonePlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingtonePlayer.h; sourceTree = "<group>"; };
@@ -130,8 +136,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E76D5FCC1CDD0FF3002FC7FE /* libSsl.a in Frameworks */,
 				E7846FE31CD681FC0064AD8E /* AVFoundation.framework in Frameworks */,
 				E7846FEB1CD6E02F0064AD8E /* libPjsip.a in Frameworks */,
+				E76D5FCB1CDD0FF3002FC7FE /* libCrypto.a in Frameworks */,
 				E7846FED1CD6E03B0064AD8E /* libOpus.a in Frameworks */,
 				E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */,
 				E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */,
@@ -163,6 +171,8 @@
 		E7846FE91CD6E01F0064AD8E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				E76D5FC91CDD0FF2002FC7FE /* libCrypto.a */,
+				E76D5FCA1CDD0FF2002FC7FE /* libSsl.a */,
 				E7846FEC1CD6E03B0064AD8E /* libOpus.a */,
 				E7846FEA1CD6E02F0064AD8E /* libPjsip.a */,
 				E7846FE21CD681FC0064AD8E /* AVFoundation.framework */,
@@ -395,7 +405,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				E76D5FC11CD8FB51002FC7FE /* SBSNameAddressPairTests.m in Sources */,
+				E78396AF1CF10D4C0095E10E /* NSString+PJString.m in Sources */,
 				E76D5FB71CD8FB1D002FC7FE /* SipperTests.m in Sources */,
+				E78396B01CF10D660095E10E /* NSError+SipperError.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -434,8 +446,17 @@
 		E76D5FBC1CD8FB1D002FC7FE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = out/pjsip/include;
 				INFOPLIST_FILE = SipperTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/out/pjsip/lib",
+					"$(PROJECT_DIR)/out/opus/lib",
+					"$(PROJECT_DIR)/out/openssl/lib",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = cc.switchboard.SipperTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -444,8 +465,17 @@
 		E76D5FBD1CD8FB1D002FC7FE /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = out/pjsip/include;
 				INFOPLIST_FILE = SipperTests/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/vendor",
+					"$(PROJECT_DIR)",
+					"$(PROJECT_DIR)/out/pjsip/lib",
+					"$(PROJECT_DIR)/out/opus/lib",
+					"$(PROJECT_DIR)/out/openssl/lib",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = cc.switchboard.SipperTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -541,12 +571,14 @@
 					"DEBUG=1",
 				);
 				HEADER_SEARCH_PATHS = out/pjsip/include;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/vendor",
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/out/pjsip/lib",
 					"$(PROJECT_DIR)/out/opus/lib",
+					"$(PROJECT_DIR)/out/openssl/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;
@@ -559,12 +591,14 @@
 			buildSettings = {
 				GCC_PREPROCESSOR_DEFINITIONS = "PJ_AUTOCONF=1";
 				HEADER_SEARCH_PATHS = out/pjsip/include;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/vendor",
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/out/pjsip/lib",
 					"$(PROJECT_DIR)/out/opus/lib",
+					"$(PROJECT_DIR)/out/openssl/lib",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = NO;

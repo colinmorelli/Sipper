@@ -8,6 +8,13 @@
 
 #import <XCTest/XCTest.h>
 
+#import "NSString+PJString.h"
+#import "SBSEndpoint.h"
+#import "SBSAccount.h"
+#import "SBSAccountConfiguration.h"
+#import "SBSEndpointConfiguration.h"
+#import "SBSTransportConfiguration.h"
+
 @interface SipperTests : XCTestCase
 
 @end
@@ -34,6 +41,24 @@
     [self measureBlock:^{
         // Put the code you want to measure the time of here.
     }];
+}
+
+- (void)testSomething {
+  SBSEndpointConfiguration *configuration = [[SBSEndpointConfiguration alloc] init];
+  configuration.transportConfigurations = @[[SBSTransportConfiguration configurationWithTransportType:SBSTransportTypeTCP]];
+  
+  SBSAccountConfiguration *accountConfiguration = [[SBSAccountConfiguration alloc] init];
+  accountConfiguration.sipProxyServer = @"sip:127.0.0.1:5080;transport=tcp";
+  accountConfiguration.sipDomain = @"test.com";
+  accountConfiguration.sipAccount = @"test";
+  accountConfiguration.sipPassword = @"asdf";
+  
+  SBSEndpoint *endpoint = [SBSEndpoint sharedEndpoint];
+  [endpoint initializeEndpointWithConfiguration:configuration error:nil];
+  SBSAccount *account = [endpoint createAccountWithConfiguration:accountConfiguration error:nil];
+  [account startRegistration];
+
+  [NSThread sleepForTimeInterval:10.0];
 }
 
 @end

@@ -51,6 +51,10 @@ typedef NS_ENUM(NSInteger, SBSCallState) {
    */
   SBSCallStateDisconnected,
   /**
+   *  Call is currently being setup, and no underlying call exists in the SIP stack
+   */
+  SBSCallStateSetup,
+  /**
    *  Call is currently ringing, waiting for remote response
    */
   SBSCallStateCalling,
@@ -91,6 +95,10 @@ typedef NS_ENUM(NSInteger, SBSCallDirection) {
  */
 typedef NS_ENUM(NSInteger, SBSCallError) {
   /**
+   *  The call is not ready to perform this action
+   */
+  SBSCallErrorCallNotReady,
+  /**
    *  Unable to answer the call
    */
   SBSCallErrorCannotAnswer,
@@ -105,12 +113,27 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
   /**
    *  Unable to take the call off of hold
    */
-  SBSCallErrorCannotUnhold
+  SBSCallErrorCannotUnhold,
+  /**
+   *  Unable to send a re-invite for the call
+   */
+  SBSCallErrorCannotReinvite
 };
 
 @protocol SBSCallDelegate<NSObject>
 
 @optional
+
+/**
+ * Invoked when the call fails with the given error code
+ *
+ * This method is only called in the event that there is a call setup failure. Once the call is active,
+ * any other state changes should be observed through the state change events
+ *
+ * @param call   the call that failed
+ * @param error  the error that was encountered while making the call
+ */
+- (void)call:(SBSCall * _Nonnull)call didFailWithError:(NSError * _Nonnull)error;
 
 /**
  * Invoked when the call changes its current call state
@@ -149,7 +172,7 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 /**
  * Unique identifier for the call
  */
-@property (nonatomic) NSUInteger id;
+@property (nonatomic) NSInteger id;
 
 /**
  * The SIP URI for the local end of the call
@@ -205,6 +228,11 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  * Delegate to receive call events
  */
 @property (weak, nonatomic, nullable) id<SBSCallDelegate> delegate;
+
+/**
+ * Timestamp that this call initially went into an active state (for determining duration)
+ */
+@property (strong, nonatomic, nullable, readonly) NSDate *activeAt;
 
 /**
  * Answers the call with a 200 OK status code
@@ -267,7 +295,7 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  *
  * @param callback a callback that will be invoked when the hold response is sent
  */
-- (void)holdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
+- (void)holdWithCallback:(void (^_Nullable)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Unholds the call if it's currently on hold
@@ -278,7 +306,17 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  *
  * @param callback a callback that will be invoked when the call is reinvited
  */
-- (void)unholdWithCallback:(void (^_Nonnull)(BOOL, NSError * _Nullable))callback;
+- (void)unholdWithCallback:(void (^_Nullable)(BOOL, NSError * _Nullable))callback;
+
+/**
+ * Sends a re-invite to the active call
+ *
+ * The purpose of this method is to attempt to update the contact destination for a live call, due to
+ * (for example) an address change.
+ *
+ * @param callback a callback that will be invoked when the call is reinvited
+ */
+- (void)reinviteWithCallback:(void (^_Nullable)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Sends the requested digits as DTMF tones

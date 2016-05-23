@@ -18,7 +18,9 @@ typedef NS_ENUM(NSUInteger, SBSTransportType) {
   SBSTransportTypeUDP,
   SBSTransportTypeTCP,
   SBSTransportTypeUDP6,
-  SBSTransportTypeTCP6
+  SBSTransportTypeTCP6,
+  SBSTransportTypeTLS,
+  SBSTransportTypeTLS6
 };
 
 @interface SBSTransportConfiguration : NSObject

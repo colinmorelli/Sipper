@@ -96,6 +96,18 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
 @property (nonatomic) double backgroundThreadPriority;
 
 /**
+ *  Determines if Sipper should internally watch for reachability changes and update itself
+ *
+ *  When enabled, Sipper monitors for system reachability changes. Whenever the reachability state changes,
+ *  Sipper makes a best-attempt to restore active calls. It will re-create any active transports binding to
+ *  the new local IP address. Additionally, it will send re-invites for an active calls to ensure we receive
+ *  new call status changes.
+ *
+ *  Default vaule: true
+ */
+@property (nonatomic) BOOL monitorReachabilityChanges;
+
+/**
  *  To check if the endpoint has a tcp configuration.
  *
  *  @return BOOL

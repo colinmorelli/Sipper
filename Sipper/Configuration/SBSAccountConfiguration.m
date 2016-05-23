@@ -14,9 +14,11 @@
 
 - (instancetype) init {
   if (self = [super init]) {
-    self.sipAuthRealm = @"*";
-    self.sipAuthScheme = SBSAuthenticationSchemeDigest;
-    self.sipRegistrationRetryTimeout = 500;
+    _sipAuthRealm = @"*";
+    _sipAuthScheme = SBSAuthenticationSchemeDigest;
+    _secureMediaPolicy = SBSSecureMediaPolicyOptional;
+    _sipRegistrationRetryTimeout = 500;
+    _sipRegistrationLifetime = 800;
   }
   
   return self;

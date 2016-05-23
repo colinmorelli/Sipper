@@ -18,12 +18,20 @@
 @interface SBSAccount ()
 
 /**
+ * Invoked once we've started a registration attempt with PJSUA
+ *
+ * Internally, this method updates some internal structures and invokes the delegate of the
+ * account to reflect the state change
+ */
+- (void)handleRegistrationStarted:(pjsua_reg_info * _Nonnull)info;
+
+/**
  * Invoked on receiving a callback from PJSUA
  *
  * Internally, this method updates some internal structures and invokes the delegate of the
  * account to reflect the state change
  */
-- (void)handleRegistrationStateChange;
+- (void)handleRegistrationStateChange:(pjsua_reg_info * _Nonnull)info;
 
 /**
  * Invoked by the endpoint when this account is receiving a new call

@@ -25,7 +25,8 @@
 static NSString * const EndpointErrorDomain = @"sipper.endpoint.error";
 
 static void onLogMessage(int, const char *, int);
-static void onRegState(pjsua_acc_id accountId);
+static void onRegState(pjsua_acc_id accountId, pjsua_reg_info *info);
+static void onRegStarted(pjsua_acc_id accountId, pjsua_reg_info *info);
 static void onCallState(pjsua_call_id callId, pjsip_event *event);
 static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata);
 static void onCallMediaState(pjsua_call_id callId);
@@ -241,8 +242,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
       // And, assign this codec's priority from the number of codecs we've already assigned
       pj_uint8_t priority = PJMEDIA_CODEC_PRIO_HIGHEST - attachedCodecs++;
       NSLog(@"Codec %@ matches codec descriptor %@, assigning priority %d", codecIdentifier, descriptor, priority);
-      status = pjsua_codec_set_priority(&codec_info[i].codec_id, priority
-                                        );
+      status = pjsua_codec_set_priority(&codec_info[i].codec_id, priority);
+      
       if (status != PJ_SUCCESS) {
         *error = [NSError ErrorWithUnderlying:nil
                       localizedDescriptionKey:NSLocalizedString(@"Could not register thread", nil)
@@ -278,6 +279,14 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 - (SBSAccount *)findAccount:(NSUInteger)id {
   return self.accountsMap[@(id)];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)handleReachabilityChange {
+  for (SBSAccount *account in self.accounts) {
+    [account handleReachabilityChange];
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -347,15 +356,12 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 - (void)reconcileState {
   @synchronized (self) {
-    AVAudioSession *session = [AVAudioSession sharedInstance];
-    AVAudioSessionCategoryOptions options = 0;
-    NSString *category = nil;
     NSArray<SBSCall *> *calls = self.calls;
     NSUInteger activeCalls = 0,
                ringingCalls = 0;
     
     for (SBSCall *call in calls) {
-      if (call.state == SBSCallStateActive || call.state == SBSCallStateConnecting || call.state == SBSCallStateCalling || call.direction == SBSCallDirectionOutbound) {
+      if (call.direction == SBSCallDirectionOutbound || call.state == SBSCallStateActive || call.state == SBSCallStateConnecting || call.state == SBSCallStateCalling) {
         activeCalls++;
       } else if (call.state == SBSCallStateIncoming || call.state == SBSCallStateEarly) {
         ringingCalls++;
@@ -363,22 +369,38 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     }
 
 #if TARGET_OS_IPHONE
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    AVAudioSessionCategoryOptions options = 0;
+    NSString *category = nil;
+    NSString *mode = nil;
+    
     // First, we check to see if we have any active calls. This is always the highest
     // priority category to assign
     if (activeCalls > 0) {
       category = AVAudioSessionCategoryPlayAndRecord;
       options = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth | AVAudioSessionCategoryOptionMixWithOthers;
+      mode = AVAudioSessionModeVoiceChat;
     } else if (ringingCalls > 0) {
       category = AVAudioSessionCategorySoloAmbient;
+      mode = AVAudioSessionModeVoiceChat;
     }
     
     // Assign a category if we had one to assign
-    if (category != nil) {
+    if (category != nil && category != session.category) {
       NSError *error;
       
       // Attempt to update the audio category
       if (![session setCategory:category withOptions:options error:&error]) {
         self.configuration.loggingCallback(SBSLogLevelWarn, @"Failed to update audio category");
+      }
+    }
+    
+    if (mode != nil && mode != session.mode) {
+      NSError *error;
+    
+      // Attempt to update the audio mode
+      if (![session setMode:mode error:&error]) {
+        self.configuration.loggingCallback(SBSLogLevelWarn, @"Failed to update audio mode");
       }
     }
     
@@ -410,11 +432,18 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 - (void)extractEndpointConfiguration:(SBSEndpointConfiguration *)configuration config:(pjsua_config *)config {
   pjsua_config_default(config);
   
-  config->cb.on_reg_state        = &onRegState;
+  config->stun_map_use_stun2     = PJ_TRUE;
+  config->stun_srv_cnt           = 4;
+  config->stun_srv[0]            = @"stun1.l.google.com:19302".pjString;
+  config->stun_srv[1]            = @"stun2.l.google.com:19302".pjString;
+  config->stun_srv[2]            = @"stun3.l.google.com:19302".pjString;
+  config->stun_srv[3]            = @"stun4.l.google.com:19302".pjString;
+  config->cb.on_reg_state2       = &onRegState;
   config->cb.on_incoming_call    = &onIncomingCall;
   config->cb.on_call_state       = &onCallState;
   config->cb.on_call_media_state = &onCallMediaState;
   config->cb.on_call_tsx_state   = &onCallTsxState;
+  config->cb.on_reg_started2     = &onRegStarted;
   
   config->max_calls = (unsigned int) configuration.maxCalls;
 }
@@ -449,6 +478,10 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
       return PJSIP_TRANSPORT_TCP6;
     case SBSTransportTypeUDP6:
       return PJSIP_TRANSPORT_UDP6;
+    case SBSTransportTypeTLS:
+      return PJSIP_TRANSPORT_TLS;
+    case SBSTransportTypeTLS6:
+      return PJSIP_TRANSPORT_TLS6;
   }
 }
 
@@ -480,14 +513,14 @@ static void onLogMessage(int level, const char *input, int length) {
   }
 }
 
-static void onRegState(pjsua_acc_id accountId) {
+static void onRegState(pjsua_acc_id accountId, pjsua_reg_info *info) {
   void *data = pjsua_acc_get_user_data(accountId);
   if (data == NULL) {
     return;
   }
   
   SBSAccount *account = (__bridge SBSAccount *) data;
-  [account handleRegistrationStateChange];
+  [account handleRegistrationStateChange:info];
 }
 
 static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata) {
@@ -531,6 +564,16 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   
   SBSCall *call = (__bridge SBSCall *) data;
   [call.account handleCallTsxStateChange:callId transation:tsx];
+}
+
+static void onRegStarted(pjsua_acc_id accountId, pjsua_reg_info *info) {
+  void *data = pjsua_acc_get_user_data(accountId);
+  if (data == NULL) {
+    return;
+  }
+  
+  SBSAccount *account = (__bridge SBSAccount *) data;
+  [account handleRegistrationStarted:info];
 }
 
 @end

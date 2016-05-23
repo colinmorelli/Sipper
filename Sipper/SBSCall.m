@@ -38,10 +38,11 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     _account = account;
     _id = callId;
     _direction = direction;
+    _state = SBSCallStateSetup;
     _media = [[NSArray alloc] init];
     _headers = [[NSMutableDictionary alloc] init];
     
-    [self prepare];
+    [self handleAssociateWithCall:callId];
   }
   
   return self;
@@ -49,20 +50,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 
 //------------------------------------------------------------------------------
 
-- (void)prepare {
-  pjsua_call_set_user_data((int) _id, (__bridge void *)(self));
-  
-  // Get the current call state to save on the call instance - always called immediately
-  [self handleCallStateChange];
-  
-  // Also make sure we've updated to the correct media settings
-  [self handleCallMediaStateChange];
-}
-
-//------------------------------------------------------------------------------
-
 - (void)dealloc {
-  pjsua_call_set_user_data((int) _id, NULL);
+  if (_id > 0) {
+    pjsua_call_set_user_data((int) _id, NULL);
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -76,6 +67,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 - (void)answerWithStatus:(SBSStatusCode)code completion:(void (^ _Nullable)(BOOL, NSError *))callback {
   if (callback == nil) {
     callback = ^(BOOL success, NSError *error) { };
+  }
+  
+  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+    return;
   }
   
   // Stop the ringtone if it's currently playing and we have a response code
@@ -132,6 +127,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     callback = ^(BOOL success, NSError *error) { };
   }
   
+  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+    return;
+  }
+  
   // Stop the ringtone if it's currently playing
   [self.player stop];
   
@@ -164,6 +163,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     callback = ^(BOOL success, NSError *error) { };
   }
   
+  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+    return;
+  }
+  
   [self.account.endpoint performAsync:^{
     pj_status_t status = pjsua_call_set_hold2((int) _id, 0, NULL);
     
@@ -192,6 +195,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     callback = ^(BOOL success, NSError *error) { };
   }
   
+  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+    return;
+  }
+  
   [self.account.endpoint performAsync:^{
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
@@ -209,6 +216,42 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
       // Made it here, we got a non-successful response code
       NSError *error = [NSError ErrorWithUnderlying:nil
                             localizedDescriptionKey:NSLocalizedString(@"Could not unhold the call", nil)
+                        localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                                        errorDomain:CallErrorDomain
+                                          errorCode:SBSCallErrorCannotUnhold];
+      callback(NO, error);
+    });
+  }];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)reinviteWithCallback:(void (^)(BOOL, NSError * _Nullable))callback {
+  if (callback == nil) {
+    callback = ^(BOOL success, NSError *error) { };
+  }
+  
+  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+    return;
+  }
+  
+  [self.account.endpoint performAsync:^{
+    pjsua_call_setting setting;
+    pjsua_call_setting_default(&setting);
+    
+    setting.flag = PJSUA_CALL_UPDATE_CONTACT;
+    pj_status_t status = pjsua_call_reinvite2((int) _id, &setting, NULL);
+    
+    // Execute the remaining method back in the main thread
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (status == PJ_SUCCESS) {
+        callback(YES, nil);
+        return;
+      }
+      
+      // Made it here, we got a non-successful response code
+      NSError *error = [NSError ErrorWithUnderlying:nil
+                            localizedDescriptionKey:NSLocalizedString(@"Could not reinvite the call", nil)
                         localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
                                         errorDomain:CallErrorDomain
                                           errorCode:SBSCallErrorCannotUnhold];
@@ -244,10 +287,63 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 }
 
 //------------------------------------------------------------------------------
+
+- (BOOL)validateCallAndFailIfNecessaryWithCompletion:(void (^)(BOOL, NSError * _Nullable))completion {
+  if (_id >= 0) {
+    return NO;
+  }
+  
+  NSError *error = [NSError ErrorWithUnderlying:nil
+                        localizedDescriptionKey:NSLocalizedString(@"Call is not setup, cannot perform action", nil)
+                    localizedFailureReasonError:NSLocalizedString(@"The requested action can only be performed when the call has left the setup state", nil)
+                                    errorDomain:CallErrorDomain
+                                      errorCode:SBSCallErrorCallNotReady];
+  dispatch_async(dispatch_get_main_queue(), ^{
+    completion(false, error);
+  });
+  
+  return YES;
+}
+
+//------------------------------------------------------------------------------
 #pragma mark - Event Handlers
 //------------------------------------------------------------------------------
 
+- (void)handleFailureWithError:(NSError *)error {
+  _state = SBSCallStateDisconnected;
+  
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([self.delegate respondsToSelector:@selector(call:didFailWithError:)]) {
+      [self.delegate call:self didFailWithError:error];
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(call:didChangeState:)]) {
+      [self.delegate call:self didChangeState:_state];
+    }
+  });
+}
+
+- (void)handleAssociateWithCall:(pjsua_call_id)callId {
+  if (callId >= 0) {
+    pjsua_call_set_user_data((int) callId, (__bridge void *)(self));
+  }
+  
+  // Update the internal call identifier
+  _id = callId;
+  
+  // And now perform a reconciliation
+  [self handleCallStateChange];
+  [self handleCallMediaStateChange];
+}
+
 - (void)handleCallStateChange {
+  
+  // If we don't have a valid call ID, then we're just in the setup state
+  if (_id < 0) {
+    return;
+  }
+  
+  // Anything past here means we have a call ID
   pjsua_call_info info;
   pj_status_t status = pjsua_call_get_info((int) _id, &info);
   
@@ -265,6 +361,11 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     [self.player stop];
   }
   
+  // If we're in an active state, update the call's timestamp
+  if (_state == SBSCallStateActive) {
+    _activeAt = [[NSDate alloc] init];
+  }
+  
   // And invoke the delegate method back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(call:didChangeState:)]) {
@@ -276,6 +377,13 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)handleCallMediaStateChange {
+  
+  // If we don't have a valid call ID, then we're just in the setup state
+  if (_id < 0) {
+    return;
+  }
+  
+  // Anything past here means we have a valid state
   pjsua_call_info info;
   pjsua_call_get_info((int) _id, &info);
   
@@ -334,6 +442,13 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)updateAudioPorts {
+  
+  // Nothing to do if the call isn't active
+  if (_id < 0) {
+    return;
+  }
+  
+  // Otherwise grab call info and reconcile
   pjsua_call_info info;
   pj_status_t status = pjsua_call_get_info((int) _id, &info);
   if (status != PJ_SUCCESS) {
@@ -368,44 +483,11 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 #pragma mark - Factory
 //------------------------------------------------------------------------------
 
-+ (instancetype)outgoingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId {
-  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionOutbound];
-  pjsip_inv_session *inv = pjsua_var.calls[callId].inv;
-  pjsip_msg *msg = inv->invite_tsx->last_tx->msg;
-  pjsip_hdr *hdr = msg->hdr.next,
-            *end = &msg->hdr;
++ (instancetype)outgoingCallWithAccount:(SBSAccount *)account destination:(NSString *)destination {
+  SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:-1 direction:SBSCallDirectionOutbound];
   
-  // Iterate over all of the headers, push to dictionary
-  for (; hdr != end; hdr = hdr->next) {
-    NSString *headerName = [NSString stringWithPJString:hdr->name];
-    char value[512] = {0};
-    
-    // If we weren't able to read the string in 512 bytes... (we should fix this)
-    if (hdr->vptr->print_on(hdr, value, 512) == -1) {
-      continue;
-    }
-    
-    // Always append the raw header value, even if we did something else above
-    NSString *headerValue = [[NSString alloc] initWithCString:value encoding:NSUTF8StringEncoding];
-    NSRange splitRange = [headerValue rangeOfString:@":"];
-    
-    // Strip out the header name from the value
-    if (splitRange.location != NSNotFound) {
-      headerValue = [[headerValue substringFromIndex:splitRange.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    }
-    
-    [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
-  }
-  
-  // Check for from/to headers
-  NSString *from = [call.headers valueForKey:@"from"];
-  if (from != nil) {
-    call.local = [SBSNameAddressPair nameAddressPairFromString:from];
-  }
-  
-  NSString *to = [call.headers valueForKey:@"to"];
-  if (to != nil) {
-    call.remote = [SBSNameAddressPair nameAddressPairFromString:to];
+  if (destination != nil) {
+    call.remote = [SBSNameAddressPair nameAddressPairFromString:destination];
   }
   
   return call;

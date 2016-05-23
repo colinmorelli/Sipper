@@ -6,6 +6,9 @@ export IOS_SDK_VERSION='9.3'
 # Minimum iOS version to target
 export MIN_IOS_VERSION='8.0'
 
+# The version of OpenSSL to checkout
+export OPENSSL_VERSION='1.0.2h'
+
 # The version of OPUS to checkout. Can be either "master" or a valid tag
 export OPUS_VERSION='1.1.2'
 
@@ -29,6 +32,7 @@ export BUILD_DIR="${BASE_DIR}/out"
 ##-----------------------------------------------------------------------------
 export PRE='----->'
 export DEVELOPER=$(xcode-select -print-path)
+export BUILD_TOOLS=${DEVELOPER}
 
 ##-----------------------------------------------------------------------------
 ## Setup
@@ -50,6 +54,92 @@ fi
 set -e
 
 ##-----------------------------------------------------------------------------
+## OpenSSL
+##-----------------------------------------------------------------------------
+
+function _exports_openssl() {
+  export SDKVERSION=${IOS_SDK_VERSION}
+  export MIN_SDK_VERSION=${MIN_IOS_VERSION}
+
+  if [ "$1" == "i386" ] || [ "$1" == "x86_64" ]; then
+    export PLATFORM="iPhoneSimulator"
+  else
+    export PLATFORM="iPhoneOS"
+  fi
+}
+
+function checkout_openssl() {
+  echo "$PRE Checking out OpenSSL ${OPENSSL_VERSION}"
+  OPENSSL_ARCHIVE_BASE_NAME=OpenSSL_${OPENSSL_VERSION//./_}
+  OPENSSL_ARCHIVE_FILE_NAME=${OPENSSL_ARCHIVE_BASE_NAME}.tar.gz
+
+  # Cleanup old versions
+  rm -rf "${SOURCE_DIR}/openssl"
+  mkdir -p "${SOURCE_DIR}/openssl"
+
+  # Download the requested version of OpenSSL
+  curl -o /tmp/openssl-${OPENSSL_VERSION}.tar.gz -LO https://github.com/openssl/openssl/archive/${OPENSSL_ARCHIVE_FILE_NAME}
+  tar zxf /tmp/openssl-${OPENSSL_VERSION}.tar.gz --strip 1 -C "${SOURCE_DIR}/openssl"
+
+  echo "$PRE Successfully checked out OpenSSL"
+}
+
+function compile_openssl() {
+  FOR_ARCHS="${1:-armv7 armv7s arm64 i386 x86_64}"
+  echo "$PRE Compiling OpenSSL for architectures $FOR_ARCHS"
+
+  # Prepare the build directory
+  mkdir -p "${BUILD_DIR}/openssl/staging/"
+
+  # Copy the PJSIP site config to the target directory
+  # cp "${CONFIG_DIR}/pjsip.h" "${SOURCE_DIR}/pjsip/pjlib/include/pj/"
+  cd "${SOURCE_DIR}/openssl"
+
+  # Compile for each of the requested architectures
+  for CURRENT_ARCH in $FOR_ARCHS; do
+    echo "$PRE Compiling OpenSSL for $CURRENT_ARCH"
+    mkdir -p "${BUILD_DIR}/openssl/staging/${CURRENT_ARCH}"
+
+    _exports_openssl $CURRENT_ARCH
+    export CC="${BUILD_TOOLS}/usr/bin/gcc -arch ${CURRENT_ARCH}"
+    export CROSS_TOP="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
+    export CROSS_SDK="${PLATFORM}${IOS_SDK_VERSION}.sdk"
+
+    if [ "${CURRENT_ARCH}" == "x86_64" ]; then
+      ./Configure no-asm darwin64-x86_64-cc --openssldir="${BUILD_DIR}/openssl/staging/${CURRENT_ARCH}"
+    else
+      ./Configure iphoneos-cross --openssldir="${BUILD_DIR}/openssl/staging/${CURRENT_ARCH}"
+    fi
+
+    # Patch the makefile to use the right header
+    if [[ "${PLATFORM}" == "AppleTVSimulator" || "${PLATFORM}" == "AppleTVOS" ]]; then
+      sed -ie "s!^CFLAG=!CFLAG=-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -mtvos-version-min=${TVOS_MIN_SDK_VERSION} !" "Makefile"
+    else
+      sed -ie "s!^CFLAG=!CFLAG=-isysroot ${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${IOS_SDK_VERSION}.sdk -miphoneos-version-min=${MIN_IOS_VERSION} !" "${SOURCE_DIR}/openssl/Makefile"
+    fi
+
+    make clean
+    make depend
+    make
+    make install_sw
+
+    # Copy the headers out to the target directory
+    rm -rf "${BUILD_DIR}/openssl/include"
+    cp -r ${BUILD_DIR}/openssl/staging/${CURRENT_ARCH}/include/ "${BUILD_DIR}/openssl/include"
+  done
+
+  echo "$PRE Successfully compiled OpenSSL for all architectures"
+}
+
+function lipo_openssl() {
+  echo "$PRE Creating multiarch OpenSSL binary"
+  mkdir -p "${BUILD_DIR}/openssl/lib"
+  libtool -o ${BUILD_DIR}/openssl/lib/libSsl.a `find "${BUILD_DIR}/openssl/staging/" -name "libssl.a"`
+  libtool -o ${BUILD_DIR}/openssl/lib/libCrypto.a `find "${BUILD_DIR}/openssl/staging/" -name "libcrypto.a"`
+  echo "$PRE Successfully created multiarch OpenSSL binary"
+}
+
+##-----------------------------------------------------------------------------
 ## OPUS
 ##-----------------------------------------------------------------------------
 
@@ -57,11 +147,11 @@ function _exports_opus() {
   if [ "$1" == "i386" ] || [ "$1" == "x86_64" ]; then
     export PLATFORM="iPhoneSimulator"
     export EXTRA_CFLAGS="-arch $1"
-    export EXTRA_CONFIG="--host=$1-apple-darwin_ios"
+    export EXTRA_CONFIG="--host=$1-apple-darwin_ios --target=$1-apple-darwin_ios"
   else
     export PLATFORM="iPhoneOS"
     export EXTRA_CFLAGS="-arch $1"
-    export EXTRA_CONFIG="--host=arm-apple-darwin"
+    export EXTRA_CONFIG="--host=arm-apple-darwin --target=$1-apple-darwin_ios"
   fi
 }
 
@@ -77,7 +167,6 @@ function checkout_opus() {
   rm -rf "${SOURCE_DIR}/opus"
   mkdir -p "${SOURCE_DIR}/opus"
   curl -o /tmp/opus-${OPUS_VERSION}.tar.gz -LO http://downloads.xiph.org/releases/opus/opus-${OPUS_VERSION}.tar.gz
-  echo /tmp/opus-${OPUS_VERSION}.tar.gz
   tar zxf /tmp/opus-${OPUS_VERSION}.tar.gz --strip 1 -C "${SOURCE_DIR}/opus"
   # git clone https://git.xiph.org/opus.git "${SOURCE_DIR}/opus"
   # cd "${SOURCE_DIR}/opus" && git checkout $OPUS_VERSION
@@ -102,10 +191,12 @@ function compile_opus() {
     mkdir -p "${BUILD_DIR}/opus/staging/${CURRENT_ARCH}"
 
     _exports_opus $CURRENT_ARCH
+    export CC="${BUILD_TOOLS}/usr/bin/gcc -arch ${CURRENT_ARCH} ${EXTRA_CFLAGS} ${OPT_CFLAGS} -fPIE -miphoneos-version-min=${MIN_IOS_VERSION} -I${BUILD_DIR}/opus/include -isysroot ${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${IOS_SDK_VERSION}.sdk"
+    export LDFLAGS="$LDFLAGS ${OPT_LDFLAGS} -fPIE -miphoneos-version-min=${MIN_IOS_VERSION}"
+    echo ./configure --enable-float-approx --disable-shared --enable-static --with-pic --disable-extra-programs --disable-doc ${EXTRA_CONFIG} \
+      --prefix=${BUILD_DIR}/opus/staging/${CURRENT_ARCH}
     ./configure --enable-float-approx --disable-shared --enable-static --with-pic --disable-extra-programs --disable-doc ${EXTRA_CONFIG} \
       --prefix=${BUILD_DIR}/opus/staging/${CURRENT_ARCH}
-      LDFLAGS="$LDFLAGS ${OPT_LDFLAGS} -fPIE -miphoneos-version-min=${MIN_IOS_VERSION} -L${BUILD_DIR}/opus/lib" \
-      CFLAGS="$CFLAGS ${EXTRA_CFLAGS} ${OPT_CFLAGS} -fPIE -miphoneos-version-min=${MIN_IOS_VERSION} -I${BUILD_DIR}/opus/include -isysroot ${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer/SDKs/${PLATFORM}${IOS_SDK_VERSION}.sdk"
 
     make clean
     make -j4
@@ -140,9 +231,9 @@ function _exports_pjsip() {
     export CFLAGS="-O2 -m32 -mios-simulator-version-min=${MIN_IOS_VERSION}"
     export LDFLAGS="-O2 -m32 -mios-simulator-version-min=${MIN_IOS_VERSION}"
   else
+    export CFLAGS="-miphoneos-version-min=${MIN_IOS_VERSION}"
+    export LDFLAGS="-miphoneos-version-min=${MIN_IOS_VERSION}"
     unset DEVPATH
-    unset CFLAGS
-    unset LDFLAGS
   fi
 }
 
@@ -185,13 +276,16 @@ function compile_pjsip() {
     mkdir -p "${BUILD_DIR}/pjsip/staging/${CURRENT_ARCH}"
 
     _exports_pjsip $CURRENT_ARCH
-    ARCH="-arch $CURRENT_ARCH" $SOURCE_DIR/pjsip/configure-iphone --with-opus="${BUILD_DIR}/opus"
+    export CC="${BUILD_TOOLS}/usr/bin/gcc -arch ${CURRENT_ARCH}"
+
+    # Work around PJSIP aconfigure bug
+    ARCH="-arch $CURRENT_ARCH" CPPFLAGS="$CPPFLAGS -I${BUILD_DIR}/openssl/include" $SOURCE_DIR/pjsip/configure-iphone --with-opus="${BUILD_DIR}/opus" --with-ssl="${BUILD_DIR}/openssl"
     RC=$?
 
     # Make the project
     make dep
     make clean
-    make
+    make -j4
 
     # Copy static libraries into the build directory
     for LIB in `find "${SOURCE_DIR}/pjsip" -name "*$CURRENT_ARCH-apple-darwin_ios.a"`; do
@@ -249,7 +343,14 @@ function opus() {
   lipo_opus
 }
 
+function openssl() {
+  checkout_openssl
+  compile_openssl
+  lipo_openssl
+}
+
 function all() {
+  openssl
   opus
   pjsip
 }

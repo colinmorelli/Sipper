@@ -32,7 +32,11 @@ typedef NS_ENUM(NSInteger, SBSAccountRegistrationState) {
   /**
    *  Account does not have an active registration with the server
    */
-  SBSAccountRegistrationStateInactive
+  SBSAccountRegistrationStateInactive,
+  /**
+   *  Account registrations have not been started
+   */
+  SBSAccountRegistrationStateDisabled
 };
 
 /**
@@ -63,6 +67,12 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param call     information about the incoming call
  */
 - (void)account:(SBSAccount * _Nonnull)account didReceiveIncomingCall:(SBSCall * _Nonnull)call;
+
+/**
+ * Invoked just before an outgoing call is made
+ *
+ * This method gives you the opportunity to perform changes that are necessary in order to
+ */
 
 /**
  * Invoked when a new outbound call is made
@@ -107,6 +117,14 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * a particular account object
  */
 @property (readonly, nonatomic) NSUInteger id;
+
+/**
+ * Current registration state for this account
+ *
+ * This value is a snapshot of the registration state for this account at any given point in
+ * time
+ */
+@property (readonly, nonatomic) SBSAccountRegistrationState registrationState;
 
 /**
  * Pointer back to the endpoint that owns this account
@@ -177,6 +195,14 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 - (void)updateConfiguration:(SBSAccountConfiguration * _Nonnull)configuration;
 
 /**
+ * Handles a reachability change in the application
+ *
+ * The responsibility of this method is to recreate any transports that are necessary after the local IP address changes due
+ * to a reachability event. It should make a best effort to restore any active calls.
+ */
+- (void)handleReachabilityChange;
+
+/**
  * Creates a new call to the requested target destination
  *
  * New calls created from this method will immediately send their invite to the remote. It's possible that you
@@ -187,7 +213,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param error       pointer to an error in case the call can't be made
  * @return a new call instance
  */
-- (void)callWithDestination:(NSString * _Nonnull)destination completion:(void (^ _Nonnull)(BOOL, SBSCall * _Nullable, NSError * _Nullable))completion;
+- (SBSCall * _Nonnull)callWithDestination:(NSString * _Nonnull)destination;
 
 @end
 

@@ -32,6 +32,7 @@ static NSUInteger const EndpointConfigurationSndClockRate = 0;
     _logConsoleLevel = EndpointConfigurationLogConsoleLevel;
     _logFilename = EndpointConfigurationLogFileName;
     _logFileFlags = PJ_O_APPEND;
+    _monitorReachabilityChanges = true;
     
     _backgroundThreadPriority = 0.5;
     _clockRate = EndpointConfigurationClockRate;

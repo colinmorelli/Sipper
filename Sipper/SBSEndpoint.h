@@ -122,7 +122,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * in the instance of SBSCall
  *
  * @param descriptors new codec descriptors to assign
- * @param error       error pointer to assign if the oepration fails
+ * @param error       error pointer to assign if the operation fails
  * @return if the operation was successful
  */
 - (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> * _Nonnull)descriptors error:(NSError * _Nullable * _Nullable)error;
@@ -135,6 +135,14 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * or using this method.
  */
 - (void)performAsync:(void (^ _Nonnull)())block;
+
+/**
+ * Handles a reachability change in the application
+ *
+ * The responsibility of this method is to recreate any transports that are necessary after the local IP address changes due
+ * to a reachability event. It should make a best effort to restore any active calls.
+ */
+- (void)handleReachabilityChange;
 
 /**
  * Returns the static shared endpoint
