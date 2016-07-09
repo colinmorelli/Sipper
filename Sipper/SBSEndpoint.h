@@ -14,7 +14,9 @@
 @class SBSAccount;
 @class SBSAccountConfiguration;
 @class SBSAudioManager;
+@class SBSCall;
 @class SBSCodecDescriptor;
+@class SBSEndpoint;
 @class SBSEndpointConfiguration;
 
 /**
@@ -47,6 +49,41 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
   SBSEndpointErrorCannotDestroy
 };
 
+/**
+ *  Possible states that the endpoint can be in
+ */
+typedef NS_ENUM(NSInteger, SBSEndpointState) {
+  /**
+   *  The endpoint is currently idle
+   */
+  SBSEndpointStateIdle,
+  /**
+   *  The endpoint has incoming calls that are ringing
+   */
+  SBSEndpointStateRingingCalls,
+  /**
+   *  The endpoint has active calls
+   */
+  SBSEndpointStateActiveCalls
+};
+
+@protocol SBSEndpointDelegate <NSObject>
+
+@optional
+
+/**
+ * Invoked when the endpoint changes its current state
+ *
+ * This method is useful for updating audio session categories at appropriate points throughout your application,
+ * without needing to send all SBSCallDelegates through a single class
+ *
+ * @param endpoint the endpoint that was updated
+ * @param state    the new state of the endpoint
+ */
+- (void)endpoint:(SBSEndpoint * _Nonnull)account didChangeState:(SBSEndpointState)state;
+
+@end
+
 @interface SBSEndpoint : NSObject
 
 /**
@@ -58,6 +95,21 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * All accounts that are currently registered with the endpoint
  */
 @property (strong, nonatomic, readonly, nonnull) NSArray<SBSAccount *> *accounts;
+
+/**
+ * All calls that the endpoint is aware of
+ */
+@property (strong, nonatomic, readonly, nonnull) NSArray<SBSCall *> *calls;
+
+/**
+ * The current state of the endpoint
+ */
+@property (nonatomic, readonly) SBSEndpointState state;
+
+/**
+ * Delegate to receive events for the endpoint
+ */
+@property (weak, nonatomic, nullable) id<SBSEndpointDelegate> delegate;
 
 /**
  * Initializes the SIP endpoint
@@ -119,7 +171,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * Updates the codec priorities for the endpoint
  *
  * Note that calling this method will not affect any calls that are currently active. Those calls must be explicitly re-negotiated
- * in the instance of SBSCall
+ * by calling reinvite in the SBSCall instance.
  *
  * @param descriptors new codec descriptors to assign
  * @param error       error pointer to assign if the operation fails
@@ -140,7 +192,8 @@ typedef NS_ENUM(NSInteger, SBSEndpointError) {
  * Handles a reachability change in the application
  *
  * The responsibility of this method is to recreate any transports that are necessary after the local IP address changes due
- * to a reachability event. It should make a best effort to restore any active calls.
+ * to a reachability event. It should make a best effort to restore any active calls that might be lost due to the IP change. 
+ * Primarily, this consists of simply sending a re-invite with the updated IP address.
  */
 - (void)handleReachabilityChange;
 

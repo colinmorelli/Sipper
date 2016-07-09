@@ -15,17 +15,41 @@
 #import "NSError+SipperError.h"
 
 #import "SBSAccount.h"
+#import "SBSEndpointConfiguration.h"
+#import "SBSEventDispatcher.h"
 #import "SBSMediaDescription.h"
 #import "SBSNameAddressPair.h"
 #import "SBSEndpoint.h"
+#import "SBSTargetActionEventListener+Internal.h"
+#import "SBSBlockEventListener+Internal.h"
 #import "SBSRingtonePlayer.h"
 
-static NSString * const CallErrorDomain = @"sipper.account.call";
+NSString * const CallErrorDomain = @"sipper.account.call";
+NSString * const SBSCallEventStateChange = @"call.state.changed";
+NSString * const SBSCallEventReceivedMessage = @"call.state.received";
+
+@implementation SBSCallEvent
+
+- (instancetype)initWithEventName:(NSString *)name call:(SBSCall *)call {
+  if (self = [super initWithName:name]) {
+    _call = call;
+  }
+  
+  return self;
+}
+
++ (SBSCallEvent *)eventWithName:(NSString *)name call:(SBSCall *)call {
+  return [[SBSCallEvent alloc] initWithEventName:name call:call];
+}
+
+@end
 
 @interface SBSCall ()
 
 @property (strong, nonatomic) NSMutableDictionary *headers;
+@property (strong, nonatomic) SBSEventDispatcher *dispatcher;
 @property (strong, nonatomic) SBSRingtonePlayer *player;
+@property (nonatomic) pjsip_transport *transport;
 
 @end
 
@@ -35,12 +59,14 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 
 - (instancetype)initWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId direction:(SBSCallDirection)direction {
   if (self = [super init]) {
+    _uuid = [NSUUID UUID];
     _account = account;
     _id = callId;
     _direction = direction;
     _state = SBSCallStateSetup;
     _media = [[NSArray alloc] init];
     _headers = [[NSMutableDictionary alloc] init];
+    _dispatcher = [[SBSEventDispatcher alloc] init];
     
     [self handleAssociateWithCall:callId];
   }
@@ -51,9 +77,23 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 //------------------------------------------------------------------------------
 
 - (void)dealloc {
+  
+  // Clear out the reference to ourselves
   if (_id > 0) {
     pjsua_call_set_user_data((int) _id, NULL);
   }
+  
+  // Shouldn't happen, but let's just make sure to prevent leaks
+  if (_transport) {
+    pjsip_transport_dec_ref(_transport);
+    _transport = NULL;
+  }
+}
+
+//------------------------------------------------------------------------------
+
+- (NSString *)valueForHeader:(NSString *)header {
+  return _headers[[header lowercaseString]];
 }
 
 //------------------------------------------------------------------------------
@@ -239,7 +279,7 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
     
-    setting.flag = PJSUA_CALL_UPDATE_CONTACT;
+//    setting.flag = PJSUA_CALL_UPDATE_CONTACT;
     pj_status_t status = pjsua_call_reinvite2((int) _id, &setting, NULL);
     
     // Execute the remaining method back in the main thread
@@ -262,12 +302,6 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 
 //------------------------------------------------------------------------------
 
-- (NSString *)valueForHeader:(NSString *)header {
-  return self.headers[header];
-}
-
-//------------------------------------------------------------------------------
-
 - (NSDictionary *)allHeaders {
   return [self.headers copy];
 }
@@ -284,6 +318,34 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 - (void)sendDigits:(NSString *)digits {
   pj_str_t input_string = digits.pjString;
   pjsua_call_dial_dtmf((int) _id, &input_string);
+}
+
+//------------------------------------------------------------------------------
+
+- (SBSEventBinding *)addListenerWithTarget:(id)target action:(SEL)action forEvent:(NSString *)event {
+  return [self.dispatcher addEventListener:[SBSTargetActionEventListener listenerWithTarget:target action:action] forEvent:event];
+}
+
+//------------------------------------------------------------------------------
+
+- (SBSEventBinding *)addListenerWithBlock:(SBSCallEventListener)block forEvent:(NSString *)event {
+  void (^ castBlock)(SBSEvent *) = (void (^)(SBSEvent *)) block;
+  
+  return [self.dispatcher addEventListener:[SBSBlockEventListener listenerWithBlock:castBlock] forEvent:event];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)removeBinding:(SBSEventBinding *)binding {
+  [self.dispatcher removeBinding:binding];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)dispatchEvent:(SBSCallEvent *)event {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self.dispatcher dispatchEvent:event];
+  });
 }
 
 //------------------------------------------------------------------------------
@@ -312,15 +374,8 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 - (void)handleFailureWithError:(NSError *)error {
   _state = SBSCallStateDisconnected;
   
-  dispatch_async(dispatch_get_main_queue(), ^{
-    if ([self.delegate respondsToSelector:@selector(call:didFailWithError:)]) {
-      [self.delegate call:self didFailWithError:error];
-    }
-    
-    if ([self.delegate respondsToSelector:@selector(call:didChangeState:)]) {
-      [self.delegate call:self didChangeState:_state];
-    }
-  });
+  // TODO: FAILURE EVENT
+  [self dispatchEvent:[SBSCallEvent eventWithName:SBSCallEventStateChange call:self]];
 }
 
 - (void)handleAssociateWithCall:(pjsua_call_id)callId {
@@ -367,11 +422,15 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   }
   
   // And invoke the delegate method back on the main thread
-  dispatch_async(dispatch_get_main_queue(), ^{
-    if ([self.delegate respondsToSelector:@selector(call:didChangeState:)]) {
-      [self.delegate call:self didChangeState:_state];
+  [self dispatchEvent:[SBSCallEvent eventWithName:SBSCallEventStateChange call:self]];
+  
+  // If we are now disconnected, release any transports we may have
+  if (_state == SBSCallStateDisconnected) {
+    if (_transport) {
+      pjsip_transport_dec_ref(_transport);
+      _transport = NULL;
     }
-  });
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -400,14 +459,22 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     
     SBSMediaDescription *description = [[SBSMediaDescription alloc] initWithMediaType:type direction:direction state:state];
     [descriptions addObject:description];
+    
+    if (holdState == SBSHoldStateNone) {
+      if (state == SBSMediaStateLocalHold) {
+        holdState = SBSHoldStateLocal;
+      } else if (state == SBSMediaStateRemoteHold) {
+        holdState = SBSHoldStateRemote;
+      }
+    }
   }
   
   // Updated media state for the call
   _media = [descriptions copy];
   
   // Determine if the hold state changed
-  _holdState = holdState;
   BOOL holdStateChanged = holdState != _holdState;
+  _holdState = holdState;
   
   // Fire the event handler back on the main thread
   dispatch_async(dispatch_get_main_queue(), ^{
@@ -415,25 +482,68 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
     // Reconcile the appropriate mute state
     [self reconcileMuteState:info];
     
+    // TODO: MEDIA EVENTS
     // Fire the hold state delegate handler if the hold state changed
-    if (holdStateChanged && [self.delegate respondsToSelector:@selector(call:didChangeHoldState:)]) {
-      [self.delegate call:self didChangeHoldState:holdState];
-    }
-    
-    // Invoke the delegate handler here
-    if ([self.delegate respondsToSelector:@selector(call:didChangeMediaState:)]) {
-      [self.delegate call:self didChangeMediaState:_media];
-    }
+//    if (holdStateChanged && [self.delegate respondsToSelector:@selector(call:didChangeHoldState:)]) {
+//      [self.delegate call:self didChangeHoldState:holdState];
+//    }
+//    
+//    // Invoke the delegate handler here
+//    if ([self.delegate respondsToSelector:@selector(call:didChangeMediaState:)]) {
+//      [self.delegate call:self didChangeMediaState:_media];
+//    }
   });
 }
 
 //------------------------------------------------------------------------------
 
-- (void)handleTransactionStateChange:(pjsip_transaction *)transaction {
+- (void)handleTransactionStateChange:(pjsip_transaction *)transaction event:(pjsip_event * _Nonnull)event {
+  
+  // See if we should grab a handle to this transport
+  if (_account.endpoint.configuration.preserveConnectionsForCalls) {
+    if (transaction->transport != _transport) {
+      if (_transport) {
+        pjsip_transport_dec_ref(_transport);
+      }
+      
+      pjsip_transport_add_ref(transaction->transport);
+      _transport = transaction->transport;
+    }
+  }
   
   // Check and see if we had a transport error, and drop the call if so
   if (transaction->transport_err != PJ_SUCCESS) {
     pjsua_call_hangup((int) _id, PJSIP_SC_TSX_TRANSPORT_ERROR, NULL, NULL);
+  }
+  
+  // If this is a response message from the remote, parse the response
+  if (event->type == PJSIP_EVENT_TSX_STATE && event->body.tsx_state.type == PJSIP_EVENT_RX_MSG) {
+    pjsip_rx_data *response = event->body.tsx_state.src.rdata;
+    
+    // Parse all of the headers out of the response message
+    NSMutableDictionary *headers = [SBSCall headersFromMessage:response->msg_info.msg];
+    
+    // Set any headers that we didn't otherwise have
+    [_headers addEntriesFromDictionary:headers];
+    
+    // Invoke the delegate method that we received a new response
+    [self dispatchEvent:[SBSCallEvent eventWithName:SBSCallEventReceivedMessage call:self]];
+  }
+}
+
+//------------------------------------------------------------------------------
+
+- (void)handleTransportStateChange:(pjsip_transport *)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info *)info {
+  
+  // Because calls may hold onto their transport, we could run into issues where we want to explicitly shut down
+  // a transport but the call is still holding onto it so it never gets destroyed. So, in this case, we listen to
+  // shutdown attempts for the transport and release it, since shutdown will only be called if the user really wants
+  // us to release this.
+  if (state == PJSIP_TP_STATE_DESTROY || state == PJSIP_TP_STATE_SHUTDOWN) {
+    if (_transport == transport) {
+      pjsip_transport_dec_ref(_transport);
+      _transport = NULL;
+    }
   }
 }
 
@@ -483,8 +593,15 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
 #pragma mark - Factory
 //------------------------------------------------------------------------------
 
-+ (instancetype)outgoingCallWithAccount:(SBSAccount *)account destination:(NSString *)destination {
++ (instancetype)outgoingCallWithAccount:(SBSAccount *)account destination:(NSString *)destination headers:(NSDictionary<NSString *,NSString *> *)headers {
   SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:-1 direction:SBSCallDirectionOutbound];
+  
+  if (headers != nil) {
+    call.headers = [[NSMutableDictionary alloc] init];
+    [headers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+      [call.headers setObject:obj forKey:[key lowercaseString]];
+    }];
+  }
   
   if (destination != nil) {
     call.remote = [SBSNameAddressPair nameAddressPairFromString:destination];
@@ -493,9 +610,34 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
   return call;
 }
 
+//------------------------------------------------------------------------------
+
 + (instancetype)incomingCallWithAccount:(SBSAccount *)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *)data {
   SBSCall *call = [[SBSCall alloc] initWithAccount:account callId:callId direction:SBSCallDirectionInbound];
   pjsip_msg *msg = data->msg_info.msg;
+  
+  // Get a list of all headers
+  call.headers = [self headersFromMessage:msg];
+  
+  // Check for from/to headers
+  NSString *from = [call.headers valueForKey:@"from"];
+  if (from != nil) {
+    call.remote = [SBSNameAddressPair nameAddressPairFromString:from];
+  }
+  
+  NSString *to = [call.headers valueForKey:@"to"];
+  if (to != nil) {
+    call.local = [SBSNameAddressPair nameAddressPairFromString:to];
+  }
+  
+  return call;
+}
+
+//------------------------------------------------------------------------------
+
++ (NSMutableDictionary *)headersFromMessage:(pjsip_msg *)msg {
+  NSMutableDictionary *headers = [[NSMutableDictionary alloc] init];
+  
   pjsip_hdr *hdr = msg->hdr.next,
             *end = &msg->hdr;
   
@@ -518,21 +660,10 @@ static NSString * const CallErrorDomain = @"sipper.account.call";
       headerValue = [[headerValue substringFromIndex:splitRange.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     }
     
-    [call.headers setObject:headerValue forKey:[headerName lowercaseString]];
+    [headers setObject:headerValue forKey:[headerName lowercaseString]];
   }
   
-  // Check for from/to headers
-  NSString *from = [call.headers valueForKey:@"from"];
-  if (from != nil) {
-    call.remote = [SBSNameAddressPair nameAddressPairFromString:from];
-  }
-  
-  NSString *to = [call.headers valueForKey:@"to"];
-  if (to != nil) {
-    call.local = [SBSNameAddressPair nameAddressPairFromString:to];
-  }
-  
-  return call;
+  return headers;
 }
 
 //------------------------------------------------------------------------------

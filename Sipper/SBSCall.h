@@ -11,6 +11,10 @@
 
 #import <Foundation/Foundation.h>
 #import "SBSConstants.h"
+#import "SBSEventDispatcher.h"
+
+extern NSString * _Nonnull const SBSCallEventStateChange;
+extern NSString * _Nonnull const SBSCallEventReceivedMessage;
 
 @class SBSAccount;
 @class SBSCall;
@@ -120,57 +124,30 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
   SBSCallErrorCannotReinvite
 };
 
-@protocol SBSCallDelegate<NSObject>
-
-@optional
+@interface SBSCallEvent : SBSEvent
 
 /**
- * Invoked when the call fails with the given error code
+ * The call that this event corresponds to
  *
- * This method is only called in the event that there is a call setup failure. Once the call is active,
- * any other state changes should be observed through the state change events
- *
- * @param call   the call that failed
- * @param error  the error that was encountered while making the call
+ * Events contain a strong reference to the call that triggered them so that listeners can easily
+ * access call information without needing to create a weak reference to the call outside of their
+ * observers.
  */
-- (void)call:(SBSCall * _Nonnull)call didFailWithError:(NSError * _Nonnull)error;
-
-/**
- * Invoked when the call changes its current call state
- *
- * @param call   the call that this is in reference to
- * @param state  the new state of the target call
- */
-- (void)call:(SBSCall * _Nonnull)call didChangeState:(SBSCallState)state;
-
-/**
- * Invoked when the underlying call's media state changes
- *
- * This method will be invoked when any of the underlying media streams changes. It is on the application
- * to check the call's media descriptions to determine if there's anything relevant
- *
- * @param call         the call that was changed during this callback
- * @param descriptions the media descriptions associated with this call
- */
-- (void)call:(SBSCall * _Nonnull)call didChangeMediaState:(NSArray<SBSMediaDescription *> * _Nonnull)descriptions;
-
-/**
- * Invoked when the hold state of the call changes
- *
- * You can implement this delegate method to receive callbacks when hold and unhold requests
- * have been processed
- *
- * @param call   the call that was changed
- * @param state  the hold state of the call
- */
-- (void)call:(SBSCall * _Nonnull)call didChangeHoldState:(SBSHoldState)state;
+@property (readonly, strong, nonnull, nonatomic) SBSCall *call;
 
 @end
+
+typedef void (^SBSCallEventListener)(SBSCallEvent * _Nonnull);
 
 @interface SBSCall : NSObject
 
 /**
- * Unique identifier for the call
+ * UUID for the call that can be used in the application
+ */
+@property (strong, nonnull, nonatomic) NSUUID *uuid;
+
+/**
+ * Underlying SIP provider ID for the call
  */
 @property (nonatomic) NSInteger id;
 
@@ -187,7 +164,7 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 /**
  * All SIP headers present on the call
  */
-@property (strong, nonatomic, nonnull, readonly) NSDictionary *allHeaders;
+@property (strong, nonatomic, nonnull, readonly) NSDictionary<NSString *, NSObject *> *allHeaders;
 
 /**
  * The account that this call belongs to
@@ -225,14 +202,19 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 @property (nonatomic) BOOL muted;
 
 /**
- * Delegate to receive call events
- */
-@property (weak, nonatomic, nullable) id<SBSCallDelegate> delegate;
-
-/**
  * Timestamp that this call initially went into an active state (for determining duration)
  */
 @property (strong, nonatomic, nullable, readonly) NSDate *activeAt;
+
+/**
+ * Returns the value for a specific header on the call
+ *
+ * This method is case-insensitive. All headers are stored in a map that is held lowercase internally,
+ * and this method applies the same case rules
+ *
+ * @param header the name of the header to get a value for
+ */
+- (NSString * _Nullable)valueForHeader:(NSString * _Nonnull)header;
 
 /**
  * Answers the call with a 200 OK status code
@@ -329,12 +311,38 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 - (void)sendDigits:(NSString * _Nullable)digits;
 
 /**
- * Returns a value for the named header
+ * Adds a new target/action pair to the listeners for this call
  *
- * @param header the name of the header to get the value for (case insensitive)
- * @return the header's value, if present
+ * Multiple listeners can be added to a call, and they will be invoked in the order that they're registered
+ * with the dispatcher
+ *
+ * @param target   the target to invoke on a new event
+ * @param selector selector on the target to invoke
+ * @param event    the event to invoke the target for
+ * @return a binding that can be used to remove the listener
  */
-- (NSString * _Nullable)valueForHeader:(NSString * _Nonnull)header;
+- (SBSEventBinding * _Nonnull)addListenerWithTarget:(id _Nonnull)target action:(SEL _Nonnull)selector forEvent:(NSString * _Nonnull)event;
+
+/**
+ * Adds a new block as a listener for call events on this call
+ *
+ * Multiple listeners can be added to a call, and they will be invoked in the order that they're registered
+ * with the dispatcher
+ *
+ * @param block the block to invoke for the event
+ * @return a binding that can be used to remove the listener
+ */
+- (SBSEventBinding * _Nonnull)addListenerWithBlock:(SBSCallEventListener _Nonnull)block forEvent:(NSString * _Nonnull)event;
+
+/**
+ * Removes a previously registered listener
+ *
+ * This method attempts to safely remove a previously registered binding from an event type
+ * on the call
+ *
+ * @param binding the binding that was returned from addTarget
+ */
+- (void)removeBinding:(SBSEventBinding * _Nonnull)binding;
 
 @end
 

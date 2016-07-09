@@ -26,32 +26,42 @@ typedef NS_ENUM(NSInteger, SBSSecureMediaPolicy) {
 /**
  *  The account that should be used when authenticate on remote PBX.
  */
-@property (strong, nonatomic) NSString * _Nonnull sipAccount;
+@property (strong, nonatomic, nonnull) NSString *sipAccount;
 
 /**
  *  The password that should be used when authenticate on remote PBX.
  */
-@property (strong, nonatomic) NSString * _Nonnull sipPassword;
+@property (strong, nonatomic, nonnull) NSString *sipPassword;
 
 /**
  *  The domain where the PBX can be found.
  */
-@property (strong, nonatomic) NSString * _Nonnull sipDomain;
+@property (strong, nonatomic, nonnull) NSString *sipDomain;
 
 /**
  *  The proxy address where to connect to. Defaults to sipDomain if unset.
  */
-@property (strong, nonatomic) NSString * _Nullable sipProxyServer;
+@property (strong, nonatomic, nullable) NSString *sipProxyServer;
 
 /**
  *  The address of the registrar server to register with. Defaults to sipProxyServer if unset.
  */
-@property (strong, nonatomic) NSString * _Nullable sipRegistrarServer;
+@property (strong, nonatomic, nullable) NSString *sipRegistrarServer;
 
 /**
  *  The address which is a combination of sipAccount & sipDomain.
  */
-@property (readonly, nonatomic) NSString * _Nonnull sipAddress;
+@property (readonly, nonatomic, nonnull) NSString *sipAddress;
+
+/**
+ *  Custom headers to send along with a registration attempt
+ */
+@property (strong, nonatomic, nullable) NSDictionary<NSString *, NSString *> *registrationHeaders;
+
+/**
+ *  Default headers to apply to all outbound calls
+ */
+@property (strong, nonatomic, nullable) NSDictionary<NSString *, NSString *> *defaultCallHeaders;
 
 /**
  *  The authentication realm.

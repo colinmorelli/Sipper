@@ -30,9 +30,10 @@
  *
  * @param callId      the identifier for the call
  * @param destination the remote endpoint receiving the call
+ * @param headers     headers that were included on the call
  * @return new call instance
  */
-+ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount * _Nonnull)account destination:(NSString * _Nonnull)destination;
++ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount * _Nonnull)account destination:(NSString * _Nonnull)destination headers:(NSDictionary<NSString *, NSString *> * _Nullable)headers;
 
 /**
  * Attempts to look up a call instance using PJSUA call identifiers
@@ -88,8 +89,21 @@
  * Invoked when a call's transaction state changes
  *
  * @param transaction the transaction whose state was changed
+ * @param event       the event that triggered the state change
  */
-- (void)handleTransactionStateChange:(pjsip_transaction * _Nonnull)transaction;
+- (void)handleTransactionStateChange:(pjsip_transaction * _Nonnull)transaction event:(pjsip_event * _Nonnull)event;
+
+/**
+ * Invoked by the endpoint when a transport changes state
+ *
+ * This fans out to all active calls to release a hold on their transports, if someone is
+ * expliclty trying to shut this transport down
+ *
+ * @param transport   the transport that had a state change
+ * @param state       the state of the transport
+ * @param info        additional state information
+ */
+- (void)handleTransportStateChange:(pjsip_transport * _Nonnull)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info * _Nonnull)info;
 
 @end
 

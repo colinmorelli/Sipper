@@ -10,6 +10,7 @@
 
 #import <Foundation/Foundation.h>
 #import <pjsua.h>
+#import <pjsua-lib/pjsua_internal.h>
 
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
@@ -25,7 +26,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 @interface SBSAccount ()
 
 @property (nonatomic) BOOL registrationsEnabled;
-@property (nonatomic) pjsip_transport *transport;
 @property (weak, nonatomic) SBSEndpoint *endpoint;
 @property (strong, readwrite, nonatomic, nonnull) NSMutableArray<SBSCall *> *calls;
 
@@ -60,12 +60,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 
 - (void)dealloc {
   pjsua_acc_set_user_data((int) _id, NULL);
-  
-  // Clear transport reference if we have one
-  if (_transport) {
-    pjsip_transport_dec_ref(_transport);
-    _transport = NULL;
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -118,11 +112,20 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 //------------------------------------------------------------------------------
 
 - (void)updateConfiguration:(SBSAccountConfiguration *)configuration {
+  
+  // Create a pool for allocating memory
   pjsua_acc_config config;
-  [SBSAccount convertAccountConfiguration:configuration endpoint:_endpoint config:&config account:self];
+  pj_caching_pool cp;
+  pj_caching_pool_init(&cp, &pj_pool_factory_default_policy, 0);
+  pj_pool_t *pool = pj_pool_create(&cp.factory, "header", 1000, 1000, NULL);
+  [SBSAccount convertAccountConfiguration:configuration endpoint:_endpoint config:&config account:self pool:pool];
   
   // Attempt to perform the account modification
   pj_status_t status = pjsua_acc_modify((int) _id, &config);
+  
+  // Ensure we release the pool
+  pj_pool_release(pool);
+  
   if (status != PJ_SUCCESS) {
     NSError *error = [NSError ErrorWithUnderlying:nil
                           localizedDescriptionKey:NSLocalizedString(@"Could not update account configuration", nil)
@@ -142,37 +145,22 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   
   // If we have an active transport, shut it down
   [self.endpoint performAsync:^{
-    if (_transport) {
-      pj_status_t status = pjsip_transport_shutdown(_transport);
-      if (status != PJ_SUCCESS) {
-        NSLog(@"Unable to destroy transport");
-      }
-      
-      pjsip_transport_dec_ref(_transport);
-      _transport = NULL;
-    }
-    
-    // Unregister this account to ensure it's properly disabled. If registrations are
-    // enabled for this account (using startRegistration), this will automatically be
-    // detected by the registration handler, and the account will re-register using a
-    // new transport.
-    pj_status_t status = pjsua_acc_set_registration((int) _id, PJ_FALSE);
-    if (status != PJ_SUCCESS) {
-      NSLog(@"Unable to send new registration");
+    for (SBSCall *call in self.calls) {
+      [call reinviteWithCallback:nil];
     }
   }];
 }
 
 //------------------------------------------------------------------------------
 
-- (SBSCall *)callWithDestination:(NSString *)destination {
+- (SBSCall *)callWithDestination:(NSString *)destination headers:(NSDictionary<NSString *,NSString *> * _Nullable)headers {
   SBSSipURI *uri = [SBSSipURI sipUriWithString:destination];
   if (uri == nil) {
     destination = [NSString stringWithFormat:@"sip:%@@%@", destination, self.configuration.sipDomain];
   }
   
   // Immediately create the call object to start the process
-  SBSCall *call = [SBSCall outgoingCallWithAccount:self destination:destination];
+  SBSCall *call = [SBSCall outgoingCallWithAccount:self destination:destination headers:headers];
   
   // Calls are not thread safe
   @synchronized (_calls) {
@@ -184,9 +172,40 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
     
+    // Create a temporary pool to allocate default headers from
+    pj_caching_pool cp;
+    pj_caching_pool_init(&cp, &pj_pool_factory_default_policy, 0);
+    pj_pool_t *pool = pj_pool_create(&cp.factory, "header", 1000, 1000, NULL);
+    
+    // Append any required default headers
+    pjsua_msg_data msg_data;
+    pjsua_msg_data_init(&msg_data);
+    
+    // Append any default headers
+    if (_configuration.defaultCallHeaders != nil) {
+      [_configuration.defaultCallHeaders enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+        pj_str_t name = key.pjString;
+        pj_str_t value = obj.pjString;
+        pj_list_push_back((pjsip_hdr *) &msg_data.hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
+      }];
+    }
+    
+    // Override with call-specific headers
+    if (headers != nil) {
+      [headers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+        pj_str_t name = key.pjString;
+        pj_str_t value = obj.pjString;
+        pj_list_push_back((pjsip_hdr *) &msg_data.hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
+      }];
+    }
+    
+    // Create the call now
     pjsua_call_id id;
     pj_str_t dst = destination.pjString;
-    pj_status_t status = pjsua_call_make_call((int) _id, &dst, &setting, NULL, NULL, &id);
+    pj_status_t status = pjsua_call_make_call((int) _id, &dst, &setting, NULL, &msg_data, &id);
+    
+    // Discard the pool to cleanup
+    pj_pool_release(pool);
     
     if (status != PJ_SUCCESS) {
       @synchronized (_calls) {
@@ -228,19 +247,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 - (void)handleRegistrationStarted:(pjsua_reg_info *)info {
   pjsip_regc_info regc_info;
   pjsip_regc_get_info(info->regc, &regc_info);
-  
-  if (_transport != regc_info.transport) {
-    
-    // If we have reference to an active transport, clear it out
-    if (_transport) {
-      pjsip_transport_dec_ref(_transport);
-      _transport = NULL;
-    }
-    
-    // Save the new transport for this registration
-    _transport = regc_info.transport;
-    pjsip_transport_add_ref(_transport);
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -248,20 +254,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 - (void)handleRegistrationStateChange:(pjsua_reg_info *)info {
   struct pjsip_regc_cbparam *params = info->cbparam;
   int status = params->code;
-  
-  // If we got a successful registration - update our transport pointer
-  if (params->code / 100 == 2 && params->expiration > 0 && params->contact_cnt > 0) {
-    
-    // Cleanup any old transport references that we have
-    if (_transport) {
-      pjsip_transport_dec_ref(_transport);
-      _transport = NULL;
-    }
-    
-    // Assign the new transport reference
-    _transport = params->rdata->tp_info.transport;
-    pjsip_transport_add_ref(_transport);
-  }
   
   // Determine the new registration state
   SBSAccountRegistrationState previousState = _registrationState;
@@ -320,15 +312,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   // Check if the registration state has changed
   if (_registrationState != previousState) {
     
-    // Attempt to reconcile active calls (if we're back into an active state)
-    if (_registrationState == SBSAccountRegistrationStateActive) {
-      NSLog(@"Registration state changed to active, re-inviting active calls");
-      for (SBSCall *call in self.calls) {
-        NSLog(@"Reinviting call");
-        [call reinviteWithCallback:nil];
-      }
-    }
-    
     // Fire the delegate handler
     dispatch_async(dispatch_get_main_queue(), ^{
       if ([self.delegate respondsToSelector:@selector(account:registrationDidChangeState:withStatusCode:)]) {
@@ -374,8 +357,6 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   
   // Cleanup if the resulting call state is disconnected
   if (call.state == SBSCallStateDisconnected) {
-    NSLog(@"Call disconnected, cleaning up");
-    
     @synchronized (_calls) {
       [_calls removeObject:call];
     }
@@ -390,8 +371,16 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 
 //------------------------------------------------------------------------------
 
-- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *)transaction {
-  [[self findCall:callId] handleTransactionStateChange:transaction];
+- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *)transaction event:(pjsip_event * _Nonnull)event {
+  [[self findCall:callId] handleTransactionStateChange:transaction event:event];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)handleTransportStateChange:(pjsip_transport *)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info *)info {
+  [self.calls enumerateObjectsUsingBlock:^(SBSCall * _Nonnull call, NSUInteger idx, BOOL * _Nonnull stop) {
+    [call handleTransportStateChange:transport state:state info:info];
+  }];
 }
 
 //------------------------------------------------------------------------------
@@ -412,7 +401,7 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 #pragma mark - Converters
 //------------------------------------------------------------------------------
 
-+ (void)convertAccountConfiguration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint config:(pjsua_acc_config *)config account:(SBSAccount *)account {
++ (void)convertAccountConfiguration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint config:(pjsua_acc_config *)config account:(SBSAccount *)account pool:(pj_pool_t *)pool {
   pjsua_acc_config_default(config);
   
   NSString *tcp = @"";
@@ -437,16 +426,30 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
   config->publish_enabled      = configuration.sipPublishEnabled ? PJ_TRUE : PJ_FALSE;
   config->reg_timeout          = (int) configuration.sipRegistrationLifetime;
   config->reg_retry_interval   = (int) configuration.sipRegistrationRetryTimeout;
-  config->use_rfc5626          = true;
+       config->use_rfc5626          = true;
   config->use_srtp             = [self convertSrtpPolicy:configuration.secureMediaPolicy];
 
+  // Add custom headers if there are any to add
+  if (configuration.registrationHeaders != nil) {
+    pj_list_init(&config->reg_hdr_list);
+    
+    // Push all headers onto the map
+    [configuration.registrationHeaders enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+      pj_str_t name = key.pjString;
+      pj_str_t value = obj.pjString;
+      pj_list_push_back(&config->reg_hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
+    }];
+  }
+  
   // Attach the account credentials to the configuration
-  config->cred_count = 1;
-  config->cred_info[0].scheme    = [self convertAuthenticationScheme:configuration.sipAuthScheme].pjString;
-  config->cred_info[0].realm     = configuration.sipAuthRealm.pjString;
-  config->cred_info[0].username  = configuration.sipAccount.pjString;
-  config->cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
-  config->cred_info[0].data      = configuration.sipPassword.pjString;
+  if (configuration.sipPassword != nil) {
+    config->cred_count = 1;
+    config->cred_info[0].scheme    = [self convertAuthenticationScheme:configuration.sipAuthScheme].pjString;
+    config->cred_info[0].realm     = configuration.sipAuthRealm.pjString;
+    config->cred_info[0].username  = configuration.sipAccount.pjString;
+    config->cred_info[0].data_type = PJSIP_CRED_DATA_PLAIN_PASSWD;
+    config->cred_info[0].data      = configuration.sipPassword.pjString;
+  }
   
   // Check if we need to push a new proxy into the list
   config->proxy_cnt = 0;
@@ -492,10 +495,20 @@ static NSString * const AccountErrorDomain = @"sipper.account.error";
 + (instancetype _Nullable)accountWithConfiguration:(SBSAccountConfiguration * _Nonnull)configuration endpoint:(SBSEndpoint * _Nonnull)endpoint error:(NSError * _Nullable * _Nullable)error {
   int acc_id;
   pjsua_acc_config config;
-  [self convertAccountConfiguration:configuration endpoint:endpoint config:&config account:nil];
+  
+  // Create a temporary pool for allocating memory
+  pj_caching_pool cp;
+  pj_caching_pool_init(&cp, &pj_pool_factory_default_policy, 0);
+  pj_pool_t *pool = pj_pool_create(&cp.factory, "header", 1000, 1000, NULL);
+  [self convertAccountConfiguration:configuration endpoint:endpoint config:&config account:nil pool:pool];
   
   // Create the new account with PJSIP
   pj_status_t status = pjsua_acc_add(&config, PJ_TRUE, &acc_id);
+  
+  // Release the pool of memory regardless of the status
+  pj_pool_release(pool);
+  
+  // And continue on with the process
   if (status != PJ_SUCCESS) {
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not create account", nil)

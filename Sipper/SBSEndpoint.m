@@ -31,11 +31,13 @@ static void onCallState(pjsua_call_id callId, pjsip_event *event);
 static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata);
 static void onCallMediaState(pjsua_call_id callId);
 static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_event *event);
+static void onTransportState(pjsip_transport *transport, pjsip_transport_state state, const pjsip_transport_state_info *info);
 
 @interface SBSEndpoint ()
 
 @property (strong, nonatomic) NSThread *backgroundThread;
 @property (strong, nonatomic) NSMutableDictionary *accountsMap;
+@property (strong, nonatomic) NSArray *activeTransports;
 
 @end
 
@@ -49,6 +51,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     _backgroundThread.name = @"Sipper Background";
     _backgroundThread.threadPriority = DISPATCH_QUEUE_PRIORITY_BACKGROUND;
     _accountsMap = [[NSMutableDictionary alloc] init];
+    _activeTransports = [NSArray array];
+    _state = SBSEndpointStateIdle;
   }
   
   return self;
@@ -66,7 +70,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     [self destroyEndpointWithError:nil];
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not create endpoint", nil)
-              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP error %d: %@", nil), status, fromPjError(status)]
                               errorDomain:EndpointErrorDomain
                                 errorCode:SBSEndpointErrorCannotCreate];
     return NO;
@@ -86,7 +90,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     [self destroyEndpointWithError:nil];
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not initialize endpoint", nil)
-              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP error %d: %@", nil), status, fromPjError(status)]
                               errorDomain:EndpointErrorDomain
                                 errorCode:SBSEndpointErrorCannotInitialize];
     return NO;
@@ -104,7 +108,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
       [self destroyEndpointWithError:nil];
       *error = [NSError ErrorWithUnderlying:nil
                     localizedDescriptionKey:NSLocalizedString(@"Could not create transport", nil)
-                localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP error %d: %@", nil), status, fromPjError(status)]
                                 errorDomain:EndpointErrorDomain
                                   errorCode:SBSEndpointErrorCannotAddTransportConfiguration];
       return NO;
@@ -117,7 +121,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
     [self destroyEndpointWithError:nil];
     *error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Could not create transport", nil)
-              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP error %d: %@", nil), status, fromPjError(status)]
                               errorDomain:EndpointErrorDomain
                                 errorCode:SBSEndpointErrorCannotAddTransportConfiguration];
     return NO;
@@ -284,6 +288,17 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 //------------------------------------------------------------------------------
 
 - (void)handleReachabilityChange {
+  
+  // Destroy all existing transports - they're most likely not safe at this point
+  for (NSValue *wrapper in _activeTransports) {
+    pj_status_t status = pjsip_transport_shutdown((pjsip_transport *) wrapper.pointerValue);
+    if (status != PJ_SUCCESS) {
+      NSLog(@"Failed to close active transport: %d", status);
+    }
+  }
+  
+  // Now, handle reachability on all accounts, which should fan out to perform a
+  // re-invite on all calls
   for (SBSAccount *account in self.accounts) {
     [account handleReachabilityChange];
   }
@@ -322,6 +337,38 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 //------------------------------------------------------------------------------
 
+- (void)reconcileState {
+  NSUInteger activeCalls = 0,
+             ringingCalls = 0;
+  
+  for (SBSCall *call in self.calls) {
+    if (call.direction == SBSCallDirectionOutbound || call.state == SBSCallStateConnecting || call.state == SBSCallStateActive) {
+      activeCalls++;
+    } else if (call.state == SBSCallStateIncoming || call.state == SBSCallStateEarly) {
+      ringingCalls++;
+    }
+  }
+  
+  SBSEndpointState endpointState = SBSEndpointStateIdle;
+  if (activeCalls > 0) {
+    endpointState = SBSEndpointStateActiveCalls;
+  } else if (ringingCalls > 0) {
+    endpointState = SBSEndpointStateRingingCalls;
+  }
+  
+  if (endpointState != _state) {
+    _state = endpointState;
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if ([self.delegate respondsToSelector:@selector(endpoint:didChangeState:)]) {
+        [self.delegate endpoint:self didChangeState:endpointState];
+      }
+    });
+  }
+}
+
+//------------------------------------------------------------------------------
+
 - (void)threadRunLoop:(id)object {
   @autoreleasepool {
     NSThread *thread = [NSThread currentThread];
@@ -353,64 +400,6 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 }
 
 //------------------------------------------------------------------------------
-
-- (void)reconcileState {
-  @synchronized (self) {
-    NSArray<SBSCall *> *calls = self.calls;
-    NSUInteger activeCalls = 0,
-               ringingCalls = 0;
-    
-    for (SBSCall *call in calls) {
-      if (call.direction == SBSCallDirectionOutbound || call.state == SBSCallStateActive || call.state == SBSCallStateConnecting || call.state == SBSCallStateCalling) {
-        activeCalls++;
-      } else if (call.state == SBSCallStateIncoming || call.state == SBSCallStateEarly) {
-        ringingCalls++;
-      }
-    }
-
-#if TARGET_OS_IPHONE
-    AVAudioSession *session = [AVAudioSession sharedInstance];
-    AVAudioSessionCategoryOptions options = 0;
-    NSString *category = nil;
-    NSString *mode = nil;
-    
-    // First, we check to see if we have any active calls. This is always the highest
-    // priority category to assign
-    if (activeCalls > 0) {
-      category = AVAudioSessionCategoryPlayAndRecord;
-      options = AVAudioSessionCategoryOptionDuckOthers | AVAudioSessionCategoryOptionAllowBluetooth | AVAudioSessionCategoryOptionMixWithOthers;
-      mode = AVAudioSessionModeVoiceChat;
-    } else if (ringingCalls > 0) {
-      category = AVAudioSessionCategorySoloAmbient;
-      mode = AVAudioSessionModeVoiceChat;
-    }
-    
-    // Assign a category if we had one to assign
-    if (category != nil && category != session.category) {
-      NSError *error;
-      
-      // Attempt to update the audio category
-      if (![session setCategory:category withOptions:options error:&error]) {
-        self.configuration.loggingCallback(SBSLogLevelWarn, @"Failed to update audio category");
-      }
-    }
-    
-    if (mode != nil && mode != session.mode) {
-      NSError *error;
-    
-      // Attempt to update the audio mode
-      if (![session setMode:mode error:&error]) {
-        self.configuration.loggingCallback(SBSLogLevelWarn, @"Failed to update audio mode");
-      }
-    }
-    
-    // Also, if we have active calls, enable proximity sensor
-    [UIDevice currentDevice].proximityMonitoringEnabled = activeCalls > 0;
-#endif
-  }
-}
-
-//------------------------------------------------------------------------------
 #pragma mark - Converters
 //------------------------------------------------------------------------------
 
@@ -432,18 +421,17 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 - (void)extractEndpointConfiguration:(SBSEndpointConfiguration *)configuration config:(pjsua_config *)config {
   pjsua_config_default(config);
   
-  config->stun_map_use_stun2     = PJ_TRUE;
-  config->stun_srv_cnt           = 4;
-  config->stun_srv[0]            = @"stun1.l.google.com:19302".pjString;
-  config->stun_srv[1]            = @"stun2.l.google.com:19302".pjString;
-  config->stun_srv[2]            = @"stun3.l.google.com:19302".pjString;
-  config->stun_srv[3]            = @"stun4.l.google.com:19302".pjString;
   config->cb.on_reg_state2       = &onRegState;
   config->cb.on_incoming_call    = &onIncomingCall;
   config->cb.on_call_state       = &onCallState;
   config->cb.on_call_media_state = &onCallMediaState;
   config->cb.on_call_tsx_state   = &onCallTsxState;
   config->cb.on_reg_started2     = &onRegStarted;
+  config->cb.on_transport_state  = &onTransportState;
+  
+  if (configuration.userAgent != nil) {
+    config->user_agent           = configuration.userAgent.pjString;
+  }
   
   config->max_calls = (unsigned int) configuration.maxCalls;
 }
@@ -470,14 +458,14 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
 
 - (pjsip_transport_type_e)convertTransportType:(SBSTransportType)type {
   switch (type) {
-    case SBSTransportTypeTCP:
-      return PJSIP_TRANSPORT_TCP;
     case SBSTransportTypeUDP:
       return PJSIP_TRANSPORT_UDP;
-    case SBSTransportTypeTCP6:
-      return PJSIP_TRANSPORT_TCP6;
     case SBSTransportTypeUDP6:
       return PJSIP_TRANSPORT_UDP6;
+    case SBSTransportTypeTCP:
+      return PJSIP_TRANSPORT_TCP;
+    case SBSTransportTypeTCP6:
+      return PJSIP_TRANSPORT_TCP6;
     case SBSTransportTypeTLS:
       return PJSIP_TRANSPORT_TLS;
     case SBSTransportTypeTLS6:
@@ -563,7 +551,8 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   }
   
   SBSCall *call = (__bridge SBSCall *) data;
-  [call.account handleCallTsxStateChange:callId transation:tsx];
+  [call.account handleCallTsxStateChange:callId transation:tsx event:event];
+  [call.account.endpoint reconcileState];
 }
 
 static void onRegStarted(pjsua_acc_id accountId, pjsua_reg_info *info) {
@@ -574,6 +563,41 @@ static void onRegStarted(pjsua_acc_id accountId, pjsua_reg_info *info) {
   
   SBSAccount *account = (__bridge SBSAccount *) data;
   [account handleRegistrationStarted:info];
+}
+
+static void onTransportState(pjsip_transport *transport, pjsip_transport_state state, const pjsip_transport_state_info *info) {
+  NSArray<NSValue *> *transports = [SBSEndpoint sharedEndpoint].activeTransports;
+  
+  @synchronized (transports) {
+    unsigned flag = pjsip_transport_get_flag_from_type((pjsip_transport_type_e) transport->key.type);
+    if (!(flag & PJSIP_TRANSPORT_DATAGRAM)) {
+      
+      // Transport is shutting down/destroying - clean it up since we don't need to track it now
+      if (state == PJSIP_TP_STATE_SHUTDOWN || state == PJSIP_TP_STATE_DESTROY) {
+        NSLog(@"Removing existing transport from array, before size: %lu", (unsigned long)[transports count]);
+        transports = [transports filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSValue * _Nullable evaluatedObject, NSDictionary<NSString *,id> * _Nullable bindings) {
+          return evaluatedObject.pointerValue != transport;
+        }]];
+        NSLog(@"Removing existing transport from array, after size: %lu", (unsigned long)[transports count]);
+      } else {
+        NSLog(@"Adding transport to array");
+        transports = [transports arrayByAddingObject:[NSValue valueWithPointer:transport]];
+      }
+      
+      [SBSEndpoint sharedEndpoint].activeTransports = transports;
+    }
+  }
+  
+  // Forward the transport state down to all accounts
+  [[SBSEndpoint sharedEndpoint].accounts enumerateObjectsUsingBlock:^(SBSAccount * _Nonnull account, NSUInteger idx, BOOL * _Nonnull stop) {
+    [account handleTransportStateChange:transport state:state info:info];
+  }];
+}
+
+static NSString *fromPjError(pj_status_t status) {
+  char error_message[PJ_ERR_MSG_SIZE];
+  pj_strerror(status, error_message, sizeof(error_message));
+  return [NSString stringWithCString:error_message encoding:NSUTF8StringEncoding];
 }
 
 @end

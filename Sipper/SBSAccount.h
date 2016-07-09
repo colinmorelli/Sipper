@@ -69,12 +69,6 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 - (void)account:(SBSAccount * _Nonnull)account didReceiveIncomingCall:(SBSCall * _Nonnull)call;
 
 /**
- * Invoked just before an outgoing call is made
- *
- * This method gives you the opportunity to perform changes that are necessary in order to
- */
-
-/**
  * Invoked when a new outbound call is made
  *
  * @param account  the account that the call was made from
@@ -210,10 +204,10 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * to always read call state from the SBSCall's ivars to reconcile anything that was missed
  *
  * @param destination the destination in the form of a SIP URI to make this call to
- * @param error       pointer to an error in case the call can't be made
+ * @param headers     headers to add to the call
  * @return a new call instance
  */
-- (SBSCall * _Nonnull)callWithDestination:(NSString * _Nonnull)destination;
+- (SBSCall * _Nonnull)callWithDestination:(NSString * _Nonnull)destination headers:(NSDictionary<NSString *, NSString *>  * _Nullable)headers;
 
 @end
 

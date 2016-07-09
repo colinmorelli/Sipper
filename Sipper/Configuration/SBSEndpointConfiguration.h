@@ -70,7 +70,7 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  If value is zero, default clock rate will be used (PJSUA_DEFAULT_CLOCK_RATE).
  *
- *  Default value: 1600
+ *  Default value: 16000
  */
 @property (nonatomic) NSUInteger clockRate;
 
@@ -96,16 +96,25 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
 @property (nonatomic) double backgroundThreadPriority;
 
 /**
- *  Determines if Sipper should internally watch for reachability changes and update itself
+ *  Determines if Sipper should retain transports for the duration of active calls
  *
- *  When enabled, Sipper monitors for system reachability changes. Whenever the reachability state changes,
- *  Sipper makes a best-attempt to restore active calls. It will re-create any active transports binding to
- *  the new local IP address. Additionally, it will send re-invites for an active calls to ensure we receive
- *  new call status changes.
+ *  When enabled, Sipper increases the ref-count on transports for the duration of the call. This will prevent
+ *  the transport from being destroyed for as long as the call is active. By default, this is active, because it
+ *  is hard to imagine a case in which this wouldn't be wanted on devices that are practically always behind a
+ *  NAT. However, it can be disabled.
  *
- *  Default vaule: true
+ *  Default value: true
  */
-@property (nonatomic) BOOL monitorReachabilityChanges;
+@property (nonatomic) BOOL preserveConnectionsForCalls;
+
+/**
+ *  The value to place in the SIP User-Agent header field
+ *
+ *  Leaving this value as nil wil use the underlying User-Agent of the provider framework.
+ *
+ *  Default value: nil
+ */
+@property (nonatomic, strong, nullable) NSString * userAgent;
 
 /**
  *  To check if the endpoint has a tcp configuration.

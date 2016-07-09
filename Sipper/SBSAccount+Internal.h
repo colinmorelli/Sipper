@@ -60,8 +60,21 @@
  *
  * @param callId      the PJSIP call identifier for the call whose transaction changed
  * @param transaction the transaction that was updated during this call
+ * @param event       the event that triggered the state change
  */
-- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction * _Nonnull)transaction;
+- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction * _Nonnull)transaction event:(pjsip_event * _Nonnull)event;
+
+/**
+ * Invoked by the endpoint when a transport changes state
+ *
+ * This fans out to all active calls to release a hold on their transports, if someone is
+ * expliclty trying to shut this transport down
+ *
+ * @param transport   the transport that had a state change
+ * @param state       the state of the transport
+ * @param info        additional state information
+ */
+- (void)handleTransportStateChange:(pjsip_transport * _Nonnull)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info * _Nonnull)info;
 
 /**
  * Attempts to create a new account and returns the account instance
