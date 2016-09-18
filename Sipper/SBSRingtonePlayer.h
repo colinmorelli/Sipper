@@ -15,14 +15,14 @@
 /**
  * The ringtone instance associated with this player
  */
-@property (strong, nonnull, nonatomic) SBSRingtone *ringtone;
+@property(strong, nonnull, nonatomic, readonly) SBSRingtone *ringtone;
 
 /**
  * Creates a new ringtone instance associated with this ringtone player
  *
  * @parameter ringtone the ringtone attached to this player
  */
-- (instancetype _Nonnull)initWithRingtone:(SBSRingtone * _Nonnull)ringtone;
+- (instancetype _Nonnull)initWithRingtone:(SBSRingtone *_Nonnull)ringtone;
 
 /**
  * Plays the ringtone instance associated with this player

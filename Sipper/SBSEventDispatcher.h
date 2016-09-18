@@ -12,7 +12,7 @@
 
 @interface SBSEvent : NSObject
 
-@property (nonatomic, readonly) NSString *name;
+@property(nonatomic, readonly) NSString *name;
 
 - (instancetype)initWithName:(NSString *)name;
 
@@ -44,7 +44,7 @@
  * @param listener the listener to register with the dispatcher
  * @param event    the event to register the listener for
  */
-- (SBSEventBinding *)addEventListener:(id<SBSEventListener>)listener forEvent:(NSString *)event;
+- (SBSEventBinding *)addEventListener:(id <SBSEventListener>)listener forEvent:(NSString *)event;
 
 /**
  * Dispatches the event to all registered listeners

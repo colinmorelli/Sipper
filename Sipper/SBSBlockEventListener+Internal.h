@@ -10,7 +10,7 @@
 
 #import "SBSEventDispatcher.h"
 
-@interface SBSBlockEventListener : NSObject<SBSEventListener>
+@interface SBSBlockEventListener : NSObject <SBSEventListener>
 
 /**
  * Creates a new listener directed at the target/action pair

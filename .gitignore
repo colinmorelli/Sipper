@@ -2,3 +2,4 @@ build
 vendor
 pjsip
 out
+.idea

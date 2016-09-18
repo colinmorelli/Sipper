@@ -13,7 +13,7 @@
 /**
  * URL to the audio file to play as a ringtone
  */
-@property (strong, nonatomic, nullable) NSURL *url;
+@property(strong, nonatomic, nullable) NSURL *url;
 
 /**
  * Creates a new instance of a ringtone with the requested URL
@@ -23,6 +23,6 @@
  *
  * @parameter url the url of the audio file to play
  */
-- (instancetype _Nonnull)initWithURL:(NSURL * _Nullable)url;
+- (instancetype _Nonnull)initWithURL:(NSURL *_Nullable)url;
 
 @end

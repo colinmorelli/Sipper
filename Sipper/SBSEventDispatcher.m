@@ -16,7 +16,7 @@
   if (self = [super init]) {
     _name = name;
   }
-  
+
   return self;
 }
 
@@ -24,7 +24,7 @@
 
 @interface SBSEventDispatcher ()
 
-@property (strong, nonatomic) NSMutableDictionary *bindings;
+@property(strong, nonatomic) NSMutableDictionary *bindings;
 
 @end
 
@@ -34,26 +34,26 @@
   if (self = [super init]) {
     _bindings = [[NSMutableDictionary alloc] init];
   }
-  
+
   return self;
 }
 
-- (SBSEventBinding *)addEventListener:(id<SBSEventListener>)listener forEvent:(NSString *)event {
+- (SBSEventBinding *)addEventListener:(id <SBSEventListener>)listener forEvent:(NSString *)event {
   NSMutableArray *bindingsForEvent = _bindings[event];
   if (bindingsForEvent == nil) {
     bindingsForEvent = [[NSMutableArray alloc] init];
     _bindings[event] = bindingsForEvent;
   }
-  
+
   SBSEventBinding *binding = [SBSEventBinding bindingWithListener:listener eventName:event];
   [bindingsForEvent addObject:binding];
-  
+
   return binding;
 }
 
 - (void)removeBinding:(SBSEventBinding *)binding {
   NSMutableArray *bindingsForEvent = _bindings[binding.eventName];
-  
+
   if ([bindingsForEvent containsObject:binding]) {
     [bindingsForEvent removeObject:binding];
   }

@@ -23,48 +23,48 @@
  *  Possible errors the Endpoint can return.
  */
 typedef NS_ENUM(NSInteger, SBSEndpointError) {
-  /**
-   *  Unable to create the pjsip library.
-   */
-  SBSEndpointErrorCannotCreate,
-  /**
-   *  Unable to initialize the pjsip library.
-   */
-  SBSEndpointErrorCannotInitialize,
-  /**
-   *  Unable to add transport configuration to endpoint.
-   */
-  SBSEndpointErrorCannotAddTransportConfiguration,
-  /**
-   *  Unable to start the pjsip library.
-   */
-  SBSEndpointErrorCannotStart,
-  /**
-   *  Unable to create the thread for pjsip.
-   */
-  SBSEndpointErrorCannotRegisterThread,
-  /**
-   *  Unable to cleanly destroy the endpoint on shutdown.
-   */
-  SBSEndpointErrorCannotDestroy
+    /**
+     *  Unable to create the pjsip library.
+     */
+        SBSEndpointErrorCannotCreate,
+    /**
+     *  Unable to initialize the pjsip library.
+     */
+        SBSEndpointErrorCannotInitialize,
+    /**
+     *  Unable to add transport configuration to endpoint.
+     */
+        SBSEndpointErrorCannotAddTransportConfiguration,
+    /**
+     *  Unable to start the pjsip library.
+     */
+        SBSEndpointErrorCannotStart,
+    /**
+     *  Unable to create the thread for pjsip.
+     */
+        SBSEndpointErrorCannotRegisterThread,
+    /**
+     *  Unable to cleanly destroy the endpoint on shutdown.
+     */
+        SBSEndpointErrorCannotDestroy
 };
 
 /**
  *  Possible states that the endpoint can be in
  */
 typedef NS_ENUM(NSInteger, SBSEndpointState) {
-  /**
-   *  The endpoint is currently idle
-   */
-  SBSEndpointStateIdle,
-  /**
-   *  The endpoint has incoming calls that are ringing
-   */
-  SBSEndpointStateRingingCalls,
-  /**
-   *  The endpoint has active calls
-   */
-  SBSEndpointStateActiveCalls
+    /**
+     *  The endpoint is currently idle
+     */
+        SBSEndpointStateIdle,
+    /**
+     *  The endpoint has incoming calls that are ringing
+     */
+        SBSEndpointStateRingingCalls,
+    /**
+     *  The endpoint has active calls
+     */
+        SBSEndpointStateActiveCalls
 };
 
 @protocol SBSEndpointDelegate <NSObject>
@@ -80,7 +80,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param endpoint the endpoint that was updated
  * @param state    the new state of the endpoint
  */
-- (void)endpoint:(SBSEndpoint * _Nonnull)account didChangeState:(SBSEndpointState)state;
+- (void)endpoint:(SBSEndpoint *_Nonnull)account didChangeState:(SBSEndpointState)state;
 
 @end
 
@@ -89,27 +89,27 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
 /**
  * The configuration that this endpoint was initialized with
  */
-@property (strong, nonatomic, readonly, nonnull) SBSEndpointConfiguration *configuration;
+@property(strong, nonatomic, readonly, nonnull) SBSEndpointConfiguration *configuration;
 
 /**
  * All accounts that are currently registered with the endpoint
  */
-@property (strong, nonatomic, readonly, nonnull) NSArray<SBSAccount *> *accounts;
+@property(strong, nonatomic, readonly, nonnull) NSArray<SBSAccount *> *accounts;
 
 /**
  * All calls that the endpoint is aware of
  */
-@property (strong, nonatomic, readonly, nonnull) NSArray<SBSCall *> *calls;
+@property(strong, nonatomic, readonly, nonnull) NSArray<SBSCall *> *calls;
 
 /**
  * The current state of the endpoint
  */
-@property (nonatomic, readonly) SBSEndpointState state;
+@property(nonatomic, readonly) SBSEndpointState state;
 
 /**
  * Delegate to receive events for the endpoint
  */
-@property (weak, nonatomic, nullable) id<SBSEndpointDelegate> delegate;
+@property(weak, nonatomic, nullable) id <SBSEndpointDelegate> delegate;
 
 /**
  * Initializes the SIP endpoint
@@ -121,7 +121,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param error         pointer to an error
  * @return if the initialization was successful
  */
-- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration * _Nonnull)configuration error:(NSError * _Nullable * _Nullable)error;
+- (BOOL)initializeEndpointWithConfiguration:(SBSEndpointConfiguration *_Nonnull)configuration error:(NSError *_Nullable *_Nullable)error;
 
 /**
  * Destroys the underlying SIP endpoint
@@ -133,7 +133,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param error pointer to an error
  * @return of the destroy was successful
  */
-- (BOOL)destroyEndpointWithError:(NSError * _Nullable * _Nullable)error;
+- (BOOL)destroyEndpointWithError:(NSError *_Nullable *_Nullable)error;
 
 /**
  * Attempts to create and register an account with the endpoint
@@ -146,7 +146,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param error         pointer to an error
  * @return a created account instance, if successful
  */
-- (SBSAccount * _Nullable)createAccountWithConfiguration:(SBSAccountConfiguration * _Nonnull)configuration error:(NSError * _Nullable * _Nullable)error;
+- (SBSAccount *_Nullable)createAccountWithConfiguration:(SBSAccountConfiguration *_Nonnull)configuration error:(NSError *_Nullable *_Nullable)error;
 
 /**
  * Deregisters an account from the endpoint
@@ -165,7 +165,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param id the account ID to find
  * @return the account associated with that ID, if it exists
  */
-- (SBSAccount * _Nullable)findAccount:(NSUInteger)id;
+- (SBSAccount *_Nullable)findAccount:(NSUInteger)id;
 
 /**
  * Updates the codec priorities for the endpoint
@@ -177,7 +177,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param error       error pointer to assign if the operation fails
  * @return if the operation was successful
  */
-- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> * _Nonnull)descriptors error:(NSError * _Nullable * _Nullable)error;
+- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> *_Nonnull)descriptors error:(NSError *_Nullable *_Nullable)error;
 
 /**
  * Executes the requested block in a background thread that is safe for the endpoint
@@ -196,6 +196,22 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * Primarily, this consists of simply sending a re-invite with the updated IP address.
  */
 - (void)handleReachabilityChange;
+
+/**
+ * Disables the audio devices on the active call
+ *
+ * The primary purpose of this method is to be used when iOS notifies the application that the audio session has been
+ * interrupted. Once called, this will set all sound devices to null and stop sending/receiving audio
+ */
+- (void)disableAudio;
+
+/**
+ * Re-renables the audio devices on the active call
+ *
+ * The primary purpose of this method is to be used when iOS notifies the application that the audio session interruption has
+ * ended. This will reset active audio devices.
+ */
+- (void)enableAudio;
 
 /**
  * Returns the static shared endpoint

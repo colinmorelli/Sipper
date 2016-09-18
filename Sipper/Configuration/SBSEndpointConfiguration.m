@@ -11,12 +11,11 @@
 #import <pjsua.h>
 
 #import "SBSTransportConfiguration.h"
-#import "SBSCodecDescriptor.h"
 
 static NSUInteger const EndpointConfigurationMaxCalls = 4;
 static NSUInteger const EndpointConfigurationLogLevel = 5;
 static NSUInteger const EndpointConfigurationLogConsoleLevel = 4;
-static NSString * const EndpointConfigurationLogFileName = nil;
+static NSString *const EndpointConfigurationLogFileName = nil;
 static NSUInteger const EndpointConfigurationClockRate = PJSUA_DEFAULT_CLOCK_RATE;
 static NSUInteger const EndpointConfigurationSndClockRate = 0;
 
@@ -27,14 +26,14 @@ static NSUInteger const EndpointConfigurationSndClockRate = 0;
 - (instancetype)init {
   if (self = [super init]) {
     _maxCalls = EndpointConfigurationMaxCalls;
-    
+
     _logLevel = EndpointConfigurationLogLevel;
     _logConsoleLevel = EndpointConfigurationLogConsoleLevel;
     _logFilename = EndpointConfigurationLogFileName;
     _logFileFlags = PJ_O_APPEND;
     _preserveConnectionsForCalls = true;
-    
-    _backgroundThreadPriority = 0.5;
+
+    _backgroundThreadPriority = 0.532258;
     _clockRate = EndpointConfigurationClockRate;
     _sndClockRate = EndpointConfigurationSndClockRate;
   }
@@ -68,13 +67,13 @@ static NSUInteger const EndpointConfigurationSndClockRate = 0;
 
 - (BOOL)hasTCPConfiguration {
   NSUInteger index = [self.transportConfigurations indexOfObjectPassingTest:^BOOL(SBSTransportConfiguration *transportConfiguration, NSUInteger idx, BOOL *stop) {
-    if (transportConfiguration.transportType == SBSTransportTypeTCP || transportConfiguration.transportType == SBSTransportTypeTCP6) {
-      *stop = YES;
-      return YES;
-    }
-    return NO;
+      if (transportConfiguration.transportType == SBSTransportTypeTCP || transportConfiguration.transportType == SBSTransportTypeTCP6) {
+        *stop = YES;
+        return YES;
+      }
+      return NO;
   }];
-  
+
   return index != NSNotFound;
 }
 

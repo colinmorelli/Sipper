@@ -10,8 +10,8 @@
 
 @interface SBSTargetActionEventListener ()
 
-@property (weak, nonatomic) id target;
-@property (nonatomic, nonnull) SEL action;
+@property(weak, nonatomic) id target;
+@property(nonatomic, nonnull) SEL action;
 
 @end
 
@@ -22,7 +22,7 @@
     _target = target;
     _action = action;
   }
-  
+
   return self;
 }
 
@@ -30,12 +30,12 @@
   if (!_target) {
     return NO;
   }
-  
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
   [_target performSelector:_action withObject:event];
 #pragma clang diagnostic pop
-  
+
   return YES;
 }
 

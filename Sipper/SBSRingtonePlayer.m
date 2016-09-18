@@ -14,7 +14,7 @@
 
 @interface SBSRingtonePlayer ()
 
-@property (strong, nonatomic, nonnull) AVAudioPlayer *player;
+@property(strong, nonatomic, nonnull) AVAudioPlayer *player;
 
 @end
 
@@ -24,25 +24,23 @@
   if (self = [super init]) {
     _ringtone = ringtone;
   }
-  
+
   return self;
 }
 
 - (void)play {
   NSError *error = nil;
-  
+
   // If we already have an audio file and are playing, no-op and return here
   if ([self.player isPlaying]) {
     return;
   }
-  
+
   // Create a new player, only if we have a URL to play
   if (self.ringtone.url != nil) {
     self.player = [[AVAudioPlayer alloc] initWithContentsOfURL:self.ringtone.url error:&error];
     [self.player prepareToPlay];
     [self.player play];
-    
-    NSLog(@"%@", error);
   }
 }
 

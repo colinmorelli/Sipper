@@ -30,7 +30,7 @@
     _samplingRate = samplingRate;
     _numberOfChannels = numberOfChannels;
   }
-  
+
   return self;
 }
 
@@ -38,15 +38,15 @@
 
 - (NSString *)description {
   NSString *description = _encoding;
-  
+
   if (_samplingRate > 0) {
     description = [description stringByAppendingString:[NSString stringWithFormat:@"/%d", (int) _samplingRate]];
   }
-  
+
   if (_numberOfChannels > 0) {
     description = [description stringByAppendingString:[NSString stringWithFormat:@"/%d", (int) _numberOfChannels]];
   }
-  
+
   return description;
 }
 

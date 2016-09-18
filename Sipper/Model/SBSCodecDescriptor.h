@@ -13,17 +13,17 @@
 /**
  * The codec's encoding type (for example, G722, PCMU, etc)
  */
-@property (strong, nonatomic, nonnull, readonly) NSString *encoding;
+@property(strong, nonatomic, nonnull, readonly) NSString *encoding;
 
 /**
  * The sampling rate of the codec
  */
-@property (nonatomic, readonly) NSUInteger samplingRate;
+@property(nonatomic, readonly) NSUInteger samplingRate;
 
 /**
  * The number of channels that this codec has
  */
-@property (nonatomic, readonly) NSUInteger numberOfChannels;
+@property(nonatomic, readonly) NSUInteger numberOfChannels;
 
 /**
  * Creates a new fully qualified codec descriptor
@@ -32,7 +32,7 @@
  * @param samplingRate     the sampling rate for the codec
  * @param numberOfChannels the number of channels this codec must match
  */
-- (instancetype _Nonnull)initWithEncoding:(NSString * _Nonnull)encoding samplingRate:(NSUInteger)samplingRate numberOfChannels:(NSUInteger)numberOfChannels;
+- (instancetype _Nonnull)initWithEncoding:(NSString *_Nonnull)encoding samplingRate:(NSUInteger)samplingRate numberOfChannels:(NSUInteger)numberOfChannels;
 
 /**
  * Creates a partially qualified codec descriptor
@@ -43,7 +43,7 @@
  * @param encoding         the name of the encoding type
  * @param samplingRate     the sampling rate for the codec
  */
-- (instancetype _Nonnull)initWithEncoding:(NSString * _Nonnull)encoding samplingRate:(NSUInteger)samplingRate;
+- (instancetype _Nonnull)initWithEncoding:(NSString *_Nonnull)encoding samplingRate:(NSUInteger)samplingRate;
 
 /**
  * Creates a partially qualified codec descriptor
@@ -53,6 +53,6 @@
  *
  * @param encoding         the name of the encoding type
  */
-- (instancetype _Nonnull)initWithEncoding:(NSString * _Nonnull)encoding;
+- (instancetype _Nonnull)initWithEncoding:(NSString *_Nonnull)encoding;
 
 @end

@@ -12,7 +12,7 @@
 #import <Foundation/Foundation.h>
 #import "SBSConstants.h"
 
-typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
+typedef void (^LoggingHandler)(SBSLogLevel, NSString *_Nonnull);
 
 @interface SBSEndpointConfiguration : NSObject
 
@@ -24,28 +24,28 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: 4
  */
-@property (nonatomic) NSUInteger maxCalls;
+@property(nonatomic) NSUInteger maxCalls;
 
 /**
  *  Input verbosity level
  *
  *  Default value: 5
  */
-@property (nonatomic) NSUInteger logLevel;
+@property(nonatomic) NSUInteger logLevel;
 
 /**
  *  Verbosity level for console.
  *
  *  Default value: 4
  */
-@property (nonatomic) NSUInteger logConsoleLevel;
+@property(nonatomic) NSUInteger logConsoleLevel;
 
 /**
  *  Optional log filename.
  *
  *  Default value: nil
  */
-@property (strong, nonatomic, nullable) NSString *logFilename;
+@property(strong, nonatomic, nullable) NSString *logFilename;
 
 /**
  *  Additional flags to be given to pj_file_open() when opening the log file.
@@ -55,7 +55,7 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: PJ_O_APPEND
  */
-@property (nonatomic) NSUInteger logFileFlags;
+@property(nonatomic) NSUInteger logFileFlags;
 
 /**
  * Block to invoke for each log message
@@ -63,7 +63,7 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  * This method will only be invoked for log messages printed at a level higher than
  * the configured level
  */
-@property (strong, nonatomic, nullable) LoggingHandler loggingCallback;
+@property(strong, nonatomic, nullable) LoggingHandler loggingCallback;
 
 /**
  *  Clock rate to be applied to the conference bridge.
@@ -72,7 +72,7 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: 16000
  */
-@property (nonatomic) NSUInteger clockRate;
+@property(nonatomic) NSUInteger clockRate;
 
 /**
  *  Clock rate to be applied when opening the sound device.
@@ -81,19 +81,19 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: 0
  */
-@property (nonatomic) NSUInteger sndClockRate;
+@property(nonatomic) NSUInteger sndClockRate;
 
 /**
  *  An array which will hold all the configured transports.
  */
-@property (strong, nonatomic, nonnull) NSArray *transportConfigurations;
+@property(strong, nonatomic, nonnull) NSArray *transportConfigurations;
 
 /**
  *  The thread priority to assign to the background thread that handles SIP manipulation.
  *
  *  Default value: 0.5
  */
-@property (nonatomic) double backgroundThreadPriority;
+@property(nonatomic) double backgroundThreadPriority;
 
 /**
  *  Determines if Sipper should retain transports for the duration of active calls
@@ -105,7 +105,7 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: true
  */
-@property (nonatomic) BOOL preserveConnectionsForCalls;
+@property(nonatomic) BOOL preserveConnectionsForCalls;
 
 /**
  *  The value to place in the SIP User-Agent header field
@@ -114,14 +114,14 @@ typedef void (^LoggingHandler) (SBSLogLevel, NSString * _Nonnull);
  *
  *  Default value: nil
  */
-@property (nonatomic, strong, nullable) NSString * userAgent;
+@property(nonatomic, strong, nullable) NSString *userAgent;
 
 /**
  *  To check if the endpoint has a tcp configuration.
  *
  *  @return BOOL
  */
--(BOOL)hasTCPConfiguration;
+- (BOOL)hasTCPConfiguration;
 
 @end
 

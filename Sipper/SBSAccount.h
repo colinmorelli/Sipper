@@ -21,37 +21,39 @@
  *  Different registration states for the account
  */
 typedef NS_ENUM(NSInteger, SBSAccountRegistrationState) {
-  /**
-   *  Account has an active registration with the server
-   */
-  SBSAccountRegistrationStateActive,
-  /**
-   *  Account is currently attempting to register with the server
-   */
-  SBSAccountRegistrationStateTrying,
-  /**
-   *  Account does not have an active registration with the server
-   */
-  SBSAccountRegistrationStateInactive,
-  /**
-   *  Account registrations have not been started
-   */
-  SBSAccountRegistrationStateDisabled
+    /**
+     *  Account has an active registration with the server
+     */
+        SBSAccountRegistrationStateActive,
+    /**
+     *  Account is currently attempting to register with the server
+     */
+        SBSAccountRegistrationStateTrying,
+    /**
+     *  Account does not have an active registration with the server
+     */
+        SBSAccountRegistrationStateInactive,
+    /**
+     *  Account registrations have not been started
+     */
+        SBSAccountRegistrationStateDisabled
 };
 
 /**
  *  Possible errors the account can return.
  */
 typedef NS_ENUM(NSInteger, SBSAccountError) {
-  /**
-   *  Unable to create the underlying account
-   */
-  SBSAccountErrorCannotCreate,
-  /**
-   *  Unable to start the account registration
-   */
-  SBSAccountErrorCannotRegister
+    /**
+     *  Unable to create the underlying account
+     */
+        SBSAccountErrorCannotCreate,
+    /**
+     *  Unable to start the account registration
+     */
+        SBSAccountErrorCannotRegister
 };
+
+#pragma mark - Delegate
 
 @protocol SBSAccountDelegate <NSObject>
 
@@ -66,7 +68,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param account  the account that the incomign call came in for
  * @param call     information about the incoming call
  */
-- (void)account:(SBSAccount * _Nonnull)account didReceiveIncomingCall:(SBSCall * _Nonnull)call;
+- (void)account:(SBSAccount *_Nonnull)account didReceiveIncomingCall:(SBSCall *_Nonnull)call;
 
 /**
  * Invoked when a new outbound call is made
@@ -74,7 +76,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param account  the account that the call was made from
  * @param call     the call that was made
  */
-- (void)account:(SBSAccount * _Nonnull)account didMakeOutgoingCall:(SBSCall * _Nonnull)call;
+- (void)account:(SBSAccount *_Nonnull)account didMakeOutgoingCall:(SBSCall *_Nonnull)call;
 
 /**
  * Invoked when the registration status of the sip account changes
@@ -86,7 +88,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param state   the new state of the account
  * @param code    the status code of the registration
  */
-- (void)account:(SBSAccount * _Nonnull)account registrationDidChangeState:(SBSAccountRegistrationState)state withStatusCode:(int)code;
+- (void)account:(SBSAccount *_Nonnull)account registrationDidChangeState:(SBSAccountRegistrationState)state withStatusCode:(int)code;
 
 /**
  * Invoked when registration fails with an error
@@ -98,9 +100,11 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param account the account that the failure is in relation to
  * @param error   the error that occurred
  */
-- (void)account:(SBSAccount * _Nonnull)account registrationDidFailWithError:(NSError * _Nonnull)error;
+- (void)account:(SBSAccount *_Nonnull)account registrationDidFailWithError:(NSError *_Nonnull)error;
 
 @end
+
+#pragma mark - Account
 
 @interface SBSAccount : NSObject
 
@@ -110,7 +114,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * This identifier will be registered in the primary Sipper class, and can be used to fetch
  * a particular account object
  */
-@property (readonly, nonatomic) NSUInteger id;
+@property(strong, readonly, nonatomic, nonnull) NSUUID *id;
 
 /**
  * Current registration state for this account
@@ -118,7 +122,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * This value is a snapshot of the registration state for this account at any given point in
  * time
  */
-@property (readonly, nonatomic) SBSAccountRegistrationState registrationState;
+@property(readonly, nonatomic) SBSAccountRegistrationState registrationState;
 
 /**
  * Pointer back to the endpoint that owns this account
@@ -126,7 +130,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * This pointer is weak to avoid a retain cycle. Endpoints have a strong reference to all of
  * their registered accounts.
  */
-@property (readonly, weak, nonatomic, nullable) SBSEndpoint *endpoint;
+@property(readonly, weak, nonatomic, nullable) SBSEndpoint *endpoint;
 
 /**
  * Pointer to the configuration that was used when constructing this object
@@ -134,7 +138,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * Note that this property is readonly. While the configuration object itself has mutable properties,
  * they *will not* be respected until the account is restarted
  */
-@property (readonly, strong, nonatomic, nonnull) SBSAccountConfiguration *configuration;
+@property(readonly, strong, nonatomic, nonnull) SBSAccountConfiguration *configuration;
 
 /**
  * Delegate to receive events for the account
@@ -142,7 +146,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * The delegate will be invoked to match state changes to the underlying account, including information
  * about new incoming calls. You probably want to set this.
  */
-@property (weak, nonatomic, nullable) id<SBSAccountDelegate> delegate;
+@property(weak, nonatomic, nullable) id <SBSAccountDelegate> delegate;
 
 /**
  * The ringtone to use for incoming calls associated with this account
@@ -150,12 +154,12 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * Ringtones for individual calls can be overridden on a per-call basis in the SBSAccountDelegate by implementing
  * didReceiveIncomingCall and setting call.ringtone on the call isntance
  */
-@property (strong, nonatomic, nullable) SBSRingtone *ringtone;
+@property(strong, nonatomic, nullable) SBSRingtone *ringtone;
 
 /**
  * All active calls on this account
  */
-@property (strong, nonatomic, nonnull, readonly) NSArray<SBSCall *> *calls;
+@property(strong, nonatomic, nonnull, readonly) NSArray<SBSCall *> *calls;
 
 /**
  * Starts the account and registers with the endpoint
@@ -186,7 +190,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  *
  * @param configuration the new configuration to use
  */
-- (void)updateConfiguration:(SBSAccountConfiguration * _Nonnull)configuration;
+- (void)updateConfiguration:(SBSAccountConfiguration *_Nonnull)configuration;
 
 /**
  * Handles a reachability change in the application
@@ -207,7 +211,21 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * @param headers     headers to add to the call
  * @return a new call instance
  */
-- (SBSCall * _Nonnull)callWithDestination:(NSString * _Nonnull)destination headers:(NSDictionary<NSString *, NSString *>  * _Nullable)headers;
+- (SBSCall *_Nonnull)callWithDestination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
+
+/**
+ * Creates a new call to the requested target destination
+ *
+ * New calls created from this method will immediately send their invite to the remote. It's possible that you
+ * miss some delegate methods, as you're not able to attach the delegate fast enough. As a result, it's recommended
+ * to always read call state from the SBSCall's ivars to reconcile anything that was missed
+ *
+ * @param uuid        the uuid for the call
+ * @param destination the destination in the form of a SIP URI to make this call to
+ * @param headers     headers to add to the call
+ * @return a new call instance
+ */
+- (SBSCall *_Nonnull)callWithUuid:(NSUUID *_Nonnull)uuid destination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
 
 @end
 

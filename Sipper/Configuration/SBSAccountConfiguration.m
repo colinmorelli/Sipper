@@ -12,7 +12,7 @@
 
 //------------------------------------------------------------------------------
 
-- (instancetype) init {
+- (instancetype)init {
   if (self = [super init]) {
     _sipAuthRealm = @"*";
     _sipAuthScheme = SBSAuthenticationSchemeDigest;
@@ -20,7 +20,7 @@
     _sipRegistrationRetryTimeout = 500;
     _sipRegistrationLifetime = 800;
   }
-  
+
   return self;
 }
 

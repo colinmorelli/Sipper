@@ -10,7 +10,7 @@
 
 @interface SBSBlockEventListener ()
 
-@property (nonatomic, copy, nonnull) void (^block)(SBSEvent *);
+@property(nonatomic, copy, nonnull) void (^block)(SBSEvent *);
 
 @end
 
@@ -20,7 +20,7 @@
   if (self = [super init]) {
     _block = block;
   }
-  
+
   return self;
 }
 

@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "E75BEFAF1CC8076600300FAD"
+               BlueprintIdentifier = "E7CDED2B1CC8229B0007C4E5"
                BuildableName = "SipperUniversal"
                BlueprintName = "SipperUniversal"
                ReferencedContainer = "container:Sipper.xcodeproj">

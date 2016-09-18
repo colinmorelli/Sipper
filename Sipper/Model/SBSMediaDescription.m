@@ -16,7 +16,7 @@
     _direction = direction;
     _state = state;
   }
-  
+
   return self;
 }
 

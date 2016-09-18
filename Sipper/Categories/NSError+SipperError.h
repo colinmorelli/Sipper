@@ -23,10 +23,10 @@
  *
  *  @return NSError instance for domain with the specified error code and the dictionary of arbitrary data userInfo.
  */
-+ (NSError * _Nonnull)ErrorWithUnderlying:(NSError * _Nullable)underlyingErrorKey
-                 localizedDescriptionKey:(NSString * _Nullable)localizedDescriptionKey
-             localizedFailureReasonError:(NSString * _Nullable)localizedFailureReasonError
-                             errorDomain:(NSString * _Nonnull)errorDomain
++ (NSError *_Nonnull)ErrorWithUnderlying:(NSError *_Nullable)underlyingErrorKey
+                 localizedDescriptionKey:(NSString *_Nullable)localizedDescriptionKey
+             localizedFailureReasonError:(NSString *_Nullable)localizedFailureReasonError
+                             errorDomain:(NSString *_Nonnull)errorDomain
                                errorCode:(NSUInteger)errorCode;
 
 @end

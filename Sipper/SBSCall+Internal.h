@@ -16,24 +16,31 @@
 @interface SBSCall ()
 
 /**
+ * Underlying SIP provider ID for the call
+ */
+@property(nonatomic) NSInteger id;
+
+/**
  * Creates a new instance of a call wrapper from the incoming PJSIP call
  *
+ * @param uuid        the uuid for the call
  * @param callId     the identifier for the call
  * @param account    the account instance that this call is for
  * @param direction  the direction of the call
  * @return new call instance
  */
-+ (instancetype _Nonnull)incomingCallWithAccount:(SBSAccount * _Nonnull)account callId:(pjsua_call_id)callId data:(pjsip_rx_data * _Nonnull)data;
++ (instancetype _Nonnull)incomingCallWithAccount:(SBSAccount *_Nonnull)account uuid:(NSUUID *_Nonnull)uuid callId:(pjsua_call_id)callId data:(pjsip_rx_data *_Nonnull)data;
 
 /**
  * Creates a new instance of a call wrapper from the incoming PJSIP call
  *
+ * @param uuid        the uuid for the call
  * @param callId      the identifier for the call
  * @param destination the remote endpoint receiving the call
  * @param headers     headers that were included on the call
  * @return new call instance
  */
-+ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount * _Nonnull)account destination:(NSString * _Nonnull)destination headers:(NSDictionary<NSString *, NSString *> * _Nullable)headers;
++ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount *_Nonnull)account uuid:(NSUUID *_Nonnull)uuid destination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
 
 /**
  * Attempts to look up a call instance using PJSUA call identifiers
@@ -66,7 +73,7 @@
  * This may be called during call setup. If invoked, it updates the call state to failed and invokes the delegate method
  * to reconcile the application
  */
-- (void)handleFailureWithError:(NSError * _Nonnull)error;
+- (void)handleFailureWithError:(NSError *_Nonnull)error;
 
 /**
  * Invoked when the call state changes
@@ -91,7 +98,7 @@
  * @param transaction the transaction whose state was changed
  * @param event       the event that triggered the state change
  */
-- (void)handleTransactionStateChange:(pjsip_transaction * _Nonnull)transaction event:(pjsip_event * _Nonnull)event;
+- (void)handleTransactionStateChange:(pjsip_transaction *_Nonnull)transaction event:(pjsip_event *_Nonnull)event;
 
 /**
  * Invoked by the endpoint when a transport changes state
@@ -103,7 +110,7 @@
  * @param state       the state of the transport
  * @param info        additional state information
  */
-- (void)handleTransportStateChange:(pjsip_transport * _Nonnull)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info * _Nonnull)info;
+- (void)handleTransportStateChange:(pjsip_transport *_Nonnull)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info *_Nonnull)info;
 
 @end
 
