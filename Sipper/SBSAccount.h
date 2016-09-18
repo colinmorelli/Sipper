@@ -21,36 +21,36 @@
  *  Different registration states for the account
  */
 typedef NS_ENUM(NSInteger, SBSAccountRegistrationState) {
-    /**
-     *  Account has an active registration with the server
-     */
-        SBSAccountRegistrationStateActive,
-    /**
-     *  Account is currently attempting to register with the server
-     */
-        SBSAccountRegistrationStateTrying,
-    /**
-     *  Account does not have an active registration with the server
-     */
-        SBSAccountRegistrationStateInactive,
-    /**
-     *  Account registrations have not been started
-     */
-        SBSAccountRegistrationStateDisabled
+  /**
+   *  Account has an active registration with the server
+   */
+  SBSAccountRegistrationStateActive,
+  /**
+   *  Account is currently attempting to register with the server
+   */
+  SBSAccountRegistrationStateTrying,
+  /**
+   *  Account does not have an active registration with the server
+   */
+  SBSAccountRegistrationStateInactive,
+  /**
+   *  Account registrations have not been started
+   */
+  SBSAccountRegistrationStateDisabled
 };
 
 /**
  *  Possible errors the account can return.
  */
 typedef NS_ENUM(NSInteger, SBSAccountError) {
-    /**
-     *  Unable to create the underlying account
-     */
-        SBSAccountErrorCannotCreate,
-    /**
-     *  Unable to start the account registration
-     */
-        SBSAccountErrorCannotRegister
+  /**
+   *  Unable to create the underlying account
+   */
+  SBSAccountErrorCannotCreate,
+  /**
+   *  Unable to start the account registration
+   */
+  SBSAccountErrorCannotRegister
 };
 
 #pragma mark - Delegate
@@ -114,7 +114,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * This identifier will be registered in the primary Sipper class, and can be used to fetch
  * a particular account object
  */
-@property(strong, readonly, nonatomic, nonnull) NSUUID *id;
+@property(strong, readonly, nonatomic, nonnull) NSUUID *uuid;
 
 /**
  * Current registration state for this account
@@ -159,7 +159,7 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
 /**
  * All active calls on this account
  */
-@property(strong, nonatomic, nonnull, readonly) NSArray<SBSCall *> *calls;
+@property(strong, nonatomic, nonnull, readonly) NSArray<SBSCall *> *allCalls;
 
 /**
  * Starts the account and registers with the endpoint
@@ -207,6 +207,9 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * miss some delegate methods, as you're not able to attach the delegate fast enough. As a result, it's recommended
  * to always read call state from the SBSCall's ivars to reconcile anything that was missed
  *
+ * Note that while endpoints retain accounts, calls *are not* retained. Your application must retain the call instance.
+ * If the call is dealloced, the underlying SIP call will be hung up.
+ *
  * @param destination the destination in the form of a SIP URI to make this call to
  * @param headers     headers to add to the call
  * @return a new call instance
@@ -220,12 +223,12 @@ typedef NS_ENUM(NSInteger, SBSAccountError) {
  * miss some delegate methods, as you're not able to attach the delegate fast enough. As a result, it's recommended
  * to always read call state from the SBSCall's ivars to reconcile anything that was missed
  *
- * @param uuid        the uuid for the call
  * @param destination the destination in the form of a SIP URI to make this call to
  * @param headers     headers to add to the call
+ * @param start       should the call be started immediately
  * @return a new call instance
  */
-- (SBSCall *_Nonnull)callWithUuid:(NSUUID *_Nonnull)uuid destination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
+- (SBSCall *_Nonnull)callWithDestination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers start:(BOOL)start;
 
 @end
 

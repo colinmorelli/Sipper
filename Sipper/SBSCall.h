@@ -1,137 +1,137 @@
 //
-//  SBSCall.h
-//  Sipper
+// Created by Colin Morelli on 9/18/16.
+// Copyright (c) 2016 Sipper. All rights reserved.
 //
-//  Created by Colin Morelli on 4/21/16.
-//  Copyright © 2016 Sipper. All rights reserved.
-//
-
-#ifndef SBSCall_h
-#define SBSCall_h
 
 #import <Foundation/Foundation.h>
-
 #import "SBSConstants.h"
 #import "SBSEventDispatcher.h"
 #import "SBSSipMessage.h"
+
+@class SBSAccount;
+@class SBSCall;
+@class SBSEndpoint;
+@class SBSEventBinding;
+@class SBSMediaDescription;
+@class SBSNameAddressPair;
+@class SBSRingtone;
+@class SBSSipMessage;
 
 extern NSString *_Nonnull const SBSCallEventStateChange;
 extern NSString *_Nonnull const SBSCallEventReceivedMessage;
 extern NSString *_Nonnull const SBSCallEventMuteStateChange;
 extern NSString *_Nonnull const SBSCallEventHoldStateChange;
 extern NSString *_Nonnull const SBSCallEventMediaDescriptionChange;
-
-@class SBSAccount;
-@class SBSCall;
-@class SBSEndpoint;
-@class SBSMediaDescription;
-@class SBSNameAddressPair;
-@class SBSRingtone;
+extern NSString *_Nonnull const SBSCallEventEnd;
 
 /**
  *  Different possible hold states
  */
 typedef NS_ENUM(NSInteger, SBSHoldState) {
-    /**
-     * The call is not currently on hold
-     */
-        SBSHoldStateNone,
-
-    /**
-     * The call is on hold by the local endpoint
-     */
-        SBSHoldStateLocal,
-
-    /**
-     * The call is on hold by the remote endpoint
-     */
-        SBSHoldStateRemote
+  /**
+   * The call is not currently on hold
+   */
+  SBSHoldStateNone,
+  
+  /**
+   * The call is on hold by the local endpoint
+   */
+  SBSHoldStateLocal,
+  
+  /**
+   * The call is on hold by the remote endpoint
+   */
+  SBSHoldStateRemote
 };
 
 /**
  *  Different valid call states
  */
 typedef NS_ENUM(NSInteger, SBSCallState) {
-    /**
-     *  Call is currently being setup, and no underlying call exists in the SIP stack
-     */
-        SBSCallStatePending,
-    /**
-     *  Call has been disconnected, and is no longer valid
-     */
-        SBSCallStateDisconnected,
-    /**
-     *  Call is currently ringing, waiting for remote response
-     */
-        SBSCallStateCalling,
-    /**
-     *  Call is currently incoming, pending response
-     */
-        SBSCallStateIncoming,
-    /**
-     *  Call is currently engaged in early media
-     */
-        SBSCallStateEarly,
-    /**
-     *  Call has been accepted, and is pending confirmation
-     */
-        SBSCallStateConnecting,
-    /**
-     *  Call is currently active and connected
-     */
-        SBSCallStateActive
+  /**
+   *  Call is currently being setup, and no underlying call exists in the SIP stack
+   */
+  SBSCallStatePending,
+  /**
+   *  Call has been disconnected, and is no longer valid
+   */
+  SBSCallStateDisconnected,
+  /**
+   *  Call is currently ringing, waiting for remote response
+   */
+  SBSCallStateCalling,
+  /**
+   *  Call is currently incoming, pending response
+   */
+  SBSCallStateIncoming,
+  /**
+   *  Call is currently engaged in early media
+   */
+  SBSCallStateEarly,
+  /**
+   *  Call has been accepted, and is pending confirmation
+   */
+  SBSCallStateConnecting,
+  /**
+   *  Call is currently active and connected
+   */
+  SBSCallStateActive
 };
 
 /**
  *  Different possible call dirations
  */
 typedef NS_ENUM(NSInteger, SBSCallDirection) {
-    /**
-     *  Call was made from this device, to the SIP server.
-     */
-        SBSCallDirectionOutbound,
-    /**
-     *  Call was received on this device, from somewhere else
-     */
-        SBSCallDirectionInbound
+  /**
+   *  Call was made from this device, to the SIP server.
+   */
+  SBSCallDirectionOutbound,
+  /**
+   *  Call was received on this device, from somewhere else
+   */
+  SBSCallDirectionInbound
 };
 
 /**
  *  Possible errors the call can return.
  */
 typedef NS_ENUM(NSInteger, SBSCallError) {
-    /**
-     *  The call is not ready to perform this action
-     */
-        SBSCallErrorCallNotReady,
-    /**
-     *  The call is not an outgoing call and can't be conneted this way
-     */
-        SBSCallErrorInvalidOperation,
-    /**
-     *  Unable to answer the call
-     */
-        SBSCallErrorCannotAnswer,
-    /**
-     *  Unable to hangup the call
-     */
-        SBSCallErrorCannotHangup,
-    /**
-     *  Unable to place the call on hold
-     */
-        SBSCallErrorCannotHold,
-    /**
-     *  Unable to take the call off of hold
-     */
-        SBSCallErrorCannotUnhold,
-    /**
-     *  Unable to send the DTMF tones
-     */
-        SBSCallErrorCannotSendDTMF,
-    /**
-     *  Unable to send a re-invite for the call
-     */
-        SBSCallErrorCannotReinvite
+  /**
+   *  The call is not ready to perform this action
+   */
+  SBSCallErrorCallNotReady,
+  /**
+   *  The call is not an outgoing call and can't be conneted this way
+   */
+  SBSCallErrorInvalidOperation,
+  /**
+   *  There was a transport error while attempting to handle a SIP message
+   */
+  SBSCallErrorTransportFailure,
+  /**
+   *  Unable to answer the call
+   */
+  SBSCallErrorCannotAnswer,
+  /**
+   *  Unable to hangup the call
+   */
+  SBSCallErrorCannotHangup,
+  /**
+   *  Unable to place the call on hold
+   */
+  SBSCallErrorCannotHold,
+  /**
+   *  Unable to take the call off of hold
+   */
+  SBSCallErrorCannotUnhold,
+  /**
+   *  Unable to send the DTMF tones
+   */
+  SBSCallErrorCannotSendDTMF,
+  /**
+   *  Unable to send a re-invite for the call
+   */
+  SBSCallErrorCannotReinvite
 };
 
 #pragma mark - Events
@@ -161,50 +161,66 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
 
 @end
 
+@interface SBSCallMediaUpdatedEvent : SBSCallEvent
+
+/**
+ * The descriptions of available media on the call
+ *
+ * This property reflects the most up-to-date information about hte media channels available on the call
+ * and can be used to determine if, for example, video/audio/text are supported
+ */
+@property(readonly, strong, nonnull, nonatomic) NSArray<SBSMediaDescription *> *media;
+
+@end
+
+@interface SBSCallEndedEvent : SBSCallEvent
+
+/**
+ * The error that caused the call to end, if any
+ */
+@property(readonly, strong, nonnull, nonatomic) NSError *error;
+
+@end
+
 #pragma mark - Closures
 
-typedef void (^SBSCallEventListener)(SBSCallEvent *_Nonnull);
+typedef void (^SBSCallEventListener)(SBSCallEvent * _Nonnull);
 
-typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError *_Nullable);
+typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError * _Nullable);
 
 #pragma mark - Call
 
 @interface SBSCall : NSObject
 
 /**
- * UUID for the call that can be used in the application
+ * Unique identifier for the call
  */
-@property(strong, nonnull, nonatomic) NSUUID *uuid;
+@property (strong, nonatomic, nonnull, readonly) NSUUID *uuid;
 
 /**
- * The SIP URI for the remote end of the call
+ * Description for the remote identity, taken from Remote-Party-ID
  */
-@property(nonatomic, nullable) SBSNameAddressPair *remote;
+@property (strong, nonatomic, nonnull, readonly) SBSNameAddressPair *remote;
 
 /**
- * Initial headers to attach on the call
+ * If an outgoing call, contains the destination that was dialed
  */
-@property(strong, nonatomic, nullable, readonly) NSDictionary<NSString *, NSString *> *initialHeaders;
+@property (strong, nonatomic, nonnull, readonly) NSString *destination;
 
 /**
- * Last SIP message that was received for this call
+ * If an outgoing call, contains all of the initial headers to add to the outgoing call
  */
-@property(strong, nonatomic, nullable, readonly) SBSSipMessage *lastReceivedMessage;
+@property (strong, nonatomic, nonnull, readonly) NSDictionary<NSString *, NSString *> *headers;
 
 /**
- * The endpoint that this acount is connected to
+ * Controls if media for the current call should be muted or not
  */
-@property(weak, nonatomic, nullable, readonly) SBSEndpoint *endpoint;
+@property (nonatomic) BOOL muted;
 
 /**
- * The account that this call belongs to
+ * The last message received for this call
  */
-@property(weak, nonatomic, nullable, readonly) SBSAccount *account;
-
-/**
- * The ringtone to play on this call
- */
-@property(strong, nonatomic, nonnull) SBSRingtone *ringtone;
+@property (strong, nonatomic, nullable, readonly) SBSSipMessage *lastMessage;
 
 /**
  * The direction of the call, can either be inbound or outbound
@@ -227,9 +243,24 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError *_Nullable);
 @property(strong, nonnull, nonatomic, readonly) NSArray<SBSMediaDescription *> *media;
 
 /**
- * The current mute state of the call, can be set to place the call on mute
+ * The ringtone to play on this call
  */
-@property(nonatomic) BOOL muted;
+@property(strong, nonatomic, nonnull) SBSRingtone *ringtone;
+
+/**
+ * The endpoint that this acount is connected to
+ */
+@property(weak, nonatomic, nullable, readonly) SBSEndpoint *endpoint;
+
+/**
+ * The account that this call belongs to
+ */
+@property(weak, nonatomic, nullable, readonly) SBSAccount *account;
+
+/**
+ * Timestamp that this call initially went into an non-pending state
+ */
+@property(strong, nonatomic, nullable, readonly) NSDate *startedAt;
 
 /**
  * Timestamp that this call initially went into an active state (for determining duration)
@@ -237,14 +268,9 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError *_Nullable);
 @property(strong, nonatomic, nullable, readonly) NSDate *activeAt;
 
 /**
- * Returns the value for a specific header on the call
- *
- * This method is case-insensitive. All headers are stored in a map that is held lowercase internally,
- * and this method applies the same case rules
- *
- * @param header the name of the header to get a value for
+ * Timestamp that this call initially went into an disconnected state
  */
-- (NSString *_Nullable)valueForHeader:(NSString *_Nonnull)header;
+@property(strong, nonatomic, nullable, readonly) NSDate *completedAt;
 
 /**
  * Places the call associate with this instance
@@ -259,7 +285,7 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError *_Nullable);
 /**
  * Answers the call with a 200 OK status code
  *
- * This is a convenience method for the alternative ANSWER implementation that takes a status code. 
+ * This is a convenience method for the alternative ANSWER implementation that takes a status code.
  * Alternative methods can be used to send pre-media to the caller.
  *
  * Note that the callback provided to this method will be invoked when we receive a result from sending
@@ -395,5 +421,3 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError *_Nullable);
 - (void)removeBinding:(SBSEventBinding *_Nonnull)binding;
 
 @end
-
-#endif

@@ -22,7 +22,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
-		E70D565C1CC8F58600348D97 /* SBSCall.m in Sources */ = {isa = PBXBuildFile; fileRef = E70D565B1CC8F58600348D97 /* SBSCall.m */; };
+		75FB88B75605246450797EB0 /* SBSCall.m in Sources */ = {isa = PBXBuildFile; fileRef = 75FB83C5FF6D79035E5FFA3C /* SBSCall.m */; };
 		E74E59631D01FB3100AD3F17 /* SBSEventBinding.m in Sources */ = {isa = PBXBuildFile; fileRef = E74E59621D01FB3100AD3F17 /* SBSEventBinding.m */; };
 		E74E59661D01FB9700AD3F17 /* SBSEventDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = E74E59651D01FB9700AD3F17 /* SBSEventDispatcher.m */; };
 		E74E596A1D01FED200AD3F17 /* SBSTargetActionEventListener+Internal.m in Sources */ = {isa = PBXBuildFile; fileRef = E74E59691D01FED200AD3F17 /* SBSTargetActionEventListener+Internal.m */; };
@@ -53,6 +53,7 @@
 		E79D73D51CC993B300400F86 /* SBSNameAddressPair.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73D41CC993B300400F86 /* SBSNameAddressPair.m */; };
 		E79D73D81CC9953800400F86 /* SBSSipURI.m in Sources */ = {isa = PBXBuildFile; fileRef = E79D73D71CC9953800400F86 /* SBSSipURI.m */; };
 		E79E5A871CCD58DC00260280 /* SBSCodecDescriptor.m in Sources */ = {isa = PBXBuildFile; fileRef = E79E5A861CCD58DC00260280 /* SBSCodecDescriptor.m */; };
+		E7A9F6C61D8F517200A798DD /* SBSSipUtilities+Internal.m in Sources */ = {isa = PBXBuildFile; fileRef = E7A9F6C51D8F517200A798DD /* SBSSipUtilities+Internal.m */; };
 		E7CDED161CC815730007C4E5 /* SBSEndpoint.m in Sources */ = {isa = PBXBuildFile; fileRef = E7CDED151CC815730007C4E5 /* SBSEndpoint.m */; };
 		E7CDED1E1CC81AF90007C4E5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */; };
 		E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */; };
@@ -84,8 +85,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		E70D565A1CC8F58600348D97 /* SBSCall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSCall.h; sourceTree = "<group>"; };
-		E70D565B1CC8F58600348D97 /* SBSCall.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCall.m; sourceTree = "<group>"; };
+		75FB825A5883C394C0DE0D08 /* SBSCall.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSCall.h; sourceTree = "<group>"; };
+		75FB83C5FF6D79035E5FFA3C /* SBSCall.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCall.m; sourceTree = "<group>"; };
 		E70D565D1CC8F9F100348D97 /* SBSCall+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSCall+Internal.h"; sourceTree = "<group>"; };
 		E70D56601CC8FF3200348D97 /* SBSConstants.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SBSConstants.h; sourceTree = "<group>"; };
 		E74E59611D01FB3100AD3F17 /* SBSEventBinding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSEventBinding.h; sourceTree = "<group>"; };
@@ -138,6 +139,8 @@
 		E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SBSAccount+Internal.h"; sourceTree = "<group>"; };
 		E79E5A851CCD58DC00260280 /* SBSCodecDescriptor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSCodecDescriptor.h; sourceTree = "<group>"; };
 		E79E5A861CCD58DC00260280 /* SBSCodecDescriptor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSCodecDescriptor.m; sourceTree = "<group>"; };
+		E7A9F6C41D8F517200A798DD /* SBSSipUtilities+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSSipUtilities+Internal.h"; sourceTree = "<group>"; };
+		E7A9F6C51D8F517200A798DD /* SBSSipUtilities+Internal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SBSSipUtilities+Internal.m"; sourceTree = "<group>"; };
 		E7CDED141CC815730007C4E5 /* SBSEndpoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSEndpoint.h; sourceTree = "<group>"; };
 		E7CDED151CC815730007C4E5 /* SBSEndpoint.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSEndpoint.m; sourceTree = "<group>"; };
 		E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -250,11 +253,11 @@
 				E79D73D21CC9939D00400F86 /* Model */,
 				E78E57041CC7B50900FDA80D /* Sipper.h */,
 				E78E586F1CC7B63200FDA80D /* SBSAccount.h */,
-				E78E586D1CC7B62300FDA80D /* SBSAccount.m */,
 				E79D73E41CCAB89600400F86 /* SBSAccount+Internal.h */,
-				E70D565A1CC8F58600348D97 /* SBSCall.h */,
-				E70D565B1CC8F58600348D97 /* SBSCall.m */,
+				E78E586D1CC7B62300FDA80D /* SBSAccount.m */,
+				75FB825A5883C394C0DE0D08 /* SBSCall.h */,
 				E70D565D1CC8F9F100348D97 /* SBSCall+Internal.h */,
+				75FB83C5FF6D79035E5FFA3C /* SBSCall.m */,
 				E70D56601CC8FF3200348D97 /* SBSConstants.h */,
 				E7CDED141CC815730007C4E5 /* SBSEndpoint.h */,
 				E7CDED151CC815730007C4E5 /* SBSEndpoint.m */,
@@ -264,6 +267,8 @@
 				E7846FDD1CD674CE0064AD8E /* SBSRingtone.m */,
 				E7846FDF1CD680BD0064AD8E /* SBSRingtonePlayer.h */,
 				E7846FE01CD680BD0064AD8E /* SBSRingtonePlayer.m */,
+				E7A9F6C41D8F517200A798DD /* SBSSipUtilities+Internal.h */,
+				E7A9F6C51D8F517200A798DD /* SBSSipUtilities+Internal.m */,
 			);
 			path = Sipper;
 			sourceTree = "<group>";
@@ -464,9 +469,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E7A9F6C61D8F517200A798DD /* SBSSipUtilities+Internal.m in Sources */,
 				E77122AB1D8ED1D70082D511 /* SBSSipResponseMessage.m in Sources */,
 				E74E59661D01FB9700AD3F17 /* SBSEventDispatcher.m in Sources */,
-				E70D565C1CC8F58600348D97 /* SBSCall.m in Sources */,
 				E77122A51D8EC7960082D511 /* SBSLogger.m in Sources */,
 				E78E58851CC7B99700FDA80D /* SBSAccountConfiguration.m in Sources */,
 				E78E588B1CC7BC1700FDA80D /* SBSTransportConfiguration.m in Sources */,
@@ -486,6 +491,7 @@
 				E74E59631D01FB3100AD3F17 /* SBSEventBinding.m in Sources */,
 				E74E596A1D01FED200AD3F17 /* SBSTargetActionEventListener+Internal.m in Sources */,
 				E79D73D51CC993B300400F86 /* SBSNameAddressPair.m in Sources */,
+				75FB88B75605246450797EB0 /* SBSCall.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

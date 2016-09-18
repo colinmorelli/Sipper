@@ -22,21 +22,18 @@
 
 static NSString *const EndpointErrorDomain = @"sipper.endpoint.error";
 
+#pragma mark - Forward Declarations
+
 static void onLogMessage(int, const char *, int);
-
 static void onRegState(pjsua_acc_id accountId, pjsua_reg_info *info);
-
 static void onRegStarted(pjsua_acc_id accountId, pjsua_reg_info *info);
-
 static void onCallState(pjsua_call_id callId, pjsip_event *event);
-
 static void onIncomingCall(pjsua_acc_id accountId, pjsua_call_id callId, pjsip_rx_data *rdata);
-
 static void onCallMediaState(pjsua_call_id callId);
-
 static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_event *event);
-
 static void onTransportState(pjsip_transport *transport, pjsip_transport_state state, const pjsip_transport_state_info *info);
+
+#pragma mark - Endpoint
 
 @interface SBSEndpoint ()
 
@@ -196,17 +193,16 @@ static void onTransportState(pjsip_transport *transport, pjsip_transport_state s
   }
 
   // Successful creation, register the account with sipper
-  [self.accounts]
-  return self.accountsMap[@(account.id)] = account;
+  return self.accountsMap[account.uuid] = account;
 }
 
 //------------------------------------------------------------------------------
 
-- (void)removeAccount:(NSUInteger)id {
-  SBSAccount *account = self.accountsMap[@(id)];
+- (void)removeAccount:(NSUUID *)id {
+  SBSAccount *account = self.accountsMap[id];
 
   [account stopRegistration];
-  [self.accountsMap removeObjectForKey:@(id)];
+  [self.accountsMap removeObjectForKey:id];
 }
 
 //------------------------------------------------------------------------------
@@ -290,8 +286,8 @@ static void onTransportState(pjsip_transport *transport, pjsip_transport_state s
 
 //------------------------------------------------------------------------------
 
-- (SBSAccount *)findAccount:(NSUInteger)id {
-  return self.accountsMap[@(id)];
+- (SBSAccount *)findAccount:(NSUUID *)id {
+  return self.accountsMap[id];
 }
 
 //------------------------------------------------------------------------------
@@ -549,7 +545,7 @@ static void onCallState(pjsua_call_id callId, pjsip_event *event) {
   }
 
   SBSCall *call = (__bridge SBSCall *) data;
-  [call.account handleCallStateChange:callId];
+  [call handleCallStateChange];
   [call.account.endpoint reconcileState];
 }
 
@@ -560,7 +556,7 @@ static void onCallMediaState(pjsua_call_id callId) {
   }
 
   SBSCall *call = (__bridge SBSCall *) data;
-  [call.account handleCallMediaStateChange:callId];
+  [call handleCallMediaStateChange];
   [call.account.endpoint reconcileState];
 }
 
@@ -571,7 +567,7 @@ static void onCallTsxState(pjsua_call_id callId, pjsip_transaction *tsx, pjsip_e
   }
 
   SBSCall *call = (__bridge SBSCall *) data;
-  [call.account handleCallTsxStateChange:callId transation:tsx event:event];
+  [call handleTransactionStateChange:tsx event:event];
   [call.account.endpoint reconcileState];
 }
 

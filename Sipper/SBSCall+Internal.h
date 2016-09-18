@@ -18,37 +18,28 @@
 /**
  * Underlying SIP provider ID for the call
  */
-@property(nonatomic) NSInteger id;
+@property(nonatomic) pjsua_call_id callId;
 
 /**
  * Creates a new instance of a call wrapper from the incoming PJSIP call
  *
- * @param uuid        the uuid for the call
+ * @param account    the account that is receiving the call
  * @param callId     the identifier for the call
  * @param account    the account instance that this call is for
  * @param direction  the direction of the call
  * @return new call instance
  */
-+ (instancetype _Nonnull)incomingCallWithAccount:(SBSAccount *_Nonnull)account uuid:(NSUUID *_Nonnull)uuid callId:(pjsua_call_id)callId data:(pjsip_rx_data *_Nonnull)data;
++ (instancetype _Nonnull)incomingCallWithAccount:(SBSAccount *_Nonnull)account callId:(pjsua_call_id)callId data:(pjsip_rx_data *_Nonnull)data;
 
 /**
  * Creates a new instance of a call wrapper from the incoming PJSIP call
  *
- * @param uuid        the uuid for the call
- * @param callId      the identifier for the call
+ * @param account     the account that is making the call
  * @param destination the remote endpoint receiving the call
  * @param headers     headers that were included on the call
  * @return new call instance
  */
-+ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount *_Nonnull)account uuid:(NSUUID *_Nonnull)uuid destination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
-
-/**
- * Attempts to look up a call instance using PJSUA call identifiers
- *
- * @param callId the callId to lookup
- * @return an instance of SBSCall, if one was found for the requested call
- */
-+ (instancetype _Nullable)fromCallId:(pjsua_call_id)callId;
++ (instancetype _Nonnull)outgoingCallWithAccount:(SBSAccount *_Nonnull)account destination:(NSString *_Nonnull)destination headers:(NSDictionary<NSString *, NSString *> *_Nullable)headers;
 
 /**
  * Starts ringing the call
@@ -57,23 +48,6 @@
  * changes
  */
 - (void)ring;
-
-/**
- * Invoked when the call should be connected to an underlying call ID
- *
- * Call IDs are either created when the call is made (in the case of incoming calls), or when call setup finishes (in the case
- * of outgoing calls). This method will *only* be called if the current callId on the call is -1. Anything else would be
- * considered an error
- */
-- (void)handleAssociateWithCall:(pjsua_call_id)callId;
-
-/**
- * Invoked when the call encounters an error
- *
- * This may be called during call setup. If invoked, it updates the call state to failed and invokes the delegate method
- * to reconcile the application
- */
-- (void)handleFailureWithError:(NSError *_Nonnull)error;
 
 /**
  * Invoked when the call state changes

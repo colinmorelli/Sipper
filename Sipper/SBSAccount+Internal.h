@@ -18,6 +18,11 @@
 @interface SBSAccount ()
 
 /**
+ * Underlying SIP provider ID for the call
+ */
+@property(nonatomic) pjsua_acc_id accountId;
+
+/**
  * Invoked once we've started a registration attempt with PJSUA
  *
  * Internally, this method updates some internal structures and invokes the delegate of the
@@ -40,29 +45,6 @@
  * @param data   the incoming rxdata that can be parsed for headers
  */
 - (void)handleIncomingCall:(pjsua_call_id)callId data:(pjsip_rx_data *_Nonnull)data;
-
-/**
- * Invoked by the endpoint when a call tracked by this account is updated
- *
- * @param callId the PJSIP call identifier for the call that was updated
- */
-- (void)handleCallStateChange:(pjsua_call_id)callId;
-
-/**
- * Invoked by the endpoint when a call tracked by this account has its media channels updated
- *
- * @param callId the PJSIP call identifier for the call that was updated
- */
-- (void)handleCallMediaStateChange:(pjsua_call_id)callId;
-
-/**
- * Invoked by the endpoint when a call's TSX transaction status changes
- *
- * @param callId      the PJSIP call identifier for the call whose transaction changed
- * @param transaction the transaction that was updated during this call
- * @param event       the event that triggered the state change
- */
-- (void)handleCallTsxStateChange:(pjsua_call_id)callId transation:(pjsip_transaction *_Nonnull)transaction event:(pjsip_event *_Nonnull)event;
 
 /**
  * Invoked by the endpoint when a transport changes state

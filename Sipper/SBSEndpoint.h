@@ -157,7 +157,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  *
  * @param id the identifier of the account
  */
-- (void)removeAccount:(NSUInteger)id;
+- (void)removeAccount:(NSUUID * _Nonnull)id;
 
 /**
  * Returns the account associated with the requested account ID
@@ -165,7 +165,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param id the account ID to find
  * @return the account associated with that ID, if it exists
  */
-- (SBSAccount *_Nullable)findAccount:(NSUInteger)id;
+- (SBSAccount *_Nullable)findAccount:(NSUUID * _Nonnull)id;
 
 /**
  * Updates the codec priorities for the endpoint
