@@ -332,7 +332,7 @@ static void onTransportState(pjsip_transport *transport, pjsip_transport_state s
   NSArray<SBSAccount *> *accounts = [self accounts];
 
   for (SBSAccount *account in accounts) {
-    [calls addObjectsFromArray:account.calls];
+    [calls addObjectsFromArray:account.allCalls];
   }
 
   return calls;

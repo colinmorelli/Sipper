@@ -188,7 +188,13 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
 //------------------------------------------------------------------------------
 
 - (NSArray<SBSCall *> *)allCalls {
-  return [self.calls copy];
+  NSMutableArray *calls = [[NSMutableArray alloc] init];
+  
+  for (SBSCall *call in [self.calls objectEnumerator]) {
+    [calls addObject:call];
+  }
+  
+  return [calls copy];
 }
 
 //------------------------------------------------------------------------------
@@ -281,17 +287,6 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
     [_calls addObject:call];
   }
   
-  // Observe for the call's end event
-  [call addListenerForEvent:SBSCallEventEnd block:^(SBSCallEvent *event) {
-    if (event.call.account == nil) {
-      return;
-    }
-    
-    @synchronized (event.call.account.calls) {
-      [event.call.account.calls removeObject:event.call];
-    }
-  }];
-  
   // Invoke the delegate - ringtone may change after this so we call ring isndoe the delegate handler
   dispatch_async(dispatch_get_main_queue(), ^{
     if ([self.delegate respondsToSelector:@selector(account:didReceiveIncomingCall:)]) {
@@ -304,29 +299,11 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
 
 //------------------------------------------------------------------------------
 
-- (void)handleCallStateChange:(pjsua_call_id)callId {
-  SBSCall *call = [self findCall:callId];
-  
-  if (call == nil) {
-    return;
-  }
-  
-  [call handleCallStateChange];
-  
-  // Cleanup if the resulting call state is disconnected
-  if (call.state == SBSCallStateDisconnected) {
-    @synchronized (_calls) {
-      [_calls removeObject:call];
-    }
-  }
-}
-
-//------------------------------------------------------------------------------
-
 - (void)handleTransportStateChange:(pjsip_transport *)transport state:(pjsip_transport_state)state info:(const pjsip_transport_state_info *)info {
-  [self.calls enumerateObjectsUsingBlock:^(SBSCall *_Nonnull call, NSUInteger idx, BOOL *_Nonnull stop) {
+  NSEnumerator<SBSCall *> *enumerator = [_calls objectEnumerator];
+  for (SBSCall *call in enumerator) {
     [call handleTransportStateChange:transport state:state info:info];
-  }];
+  }
 }
 
 //------------------------------------------------------------------------------

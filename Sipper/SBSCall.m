@@ -113,6 +113,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
 @property (nonatomic, nonnull, strong) SBSEventDispatcher *dispatcher;
 @property (nonatomic, nullable, strong) SBSRingtonePlayer *player;
 @property (nonatomic, nullable, strong) NSError *error;
+@property (nonatomic, nonnull, strong) NSMutableDictionary<NSString *, NSString *> *allHeaders;
 @property (nonatomic) BOOL ended;
 
 @end
@@ -129,7 +130,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
     _endpoint = endpoint;
     _account = account;
     _destination = destination;
-    _headers = headers;
+    _allHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
     _ended = NO;
   }
   
@@ -146,6 +147,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
     _endpoint = endpoint;
     _account = account;
     _remote = remote;
+    _allHeaders = [[NSMutableDictionary alloc] init];
     _ended = NO;
     
     [self attachCall:callId];
@@ -178,6 +180,18 @@ NSString *const SBSCallEventEnd = @"call.ended";
     pjsip_transport_dec_ref(_transport);
     _transport = NULL;
   }
+}
+
+//------------------------------------------------------------------------------
+
+- (NSDictionary<NSString *, NSString *> *)headers {
+  return [_allHeaders copy];
+}
+
+//------------------------------------------------------------------------------
+
+- (NSString *)valueForHeader:(NSString *)header {
+  return [_allHeaders valueForKey:header];
 }
 
 //------------------------------------------------------------------------------
@@ -216,8 +230,8 @@ NSString *const SBSCallEventEnd = @"call.ended";
     pjsua_msg_data_init(&msg_data);
     
     // Append any default headers
-    if (_headers != nil) {
-      [_headers enumerateKeysAndObjectsUsingBlock:^(NSString *_Nonnull key, NSString *_Nonnull obj, BOOL *_Nonnull stop) {
+    if (_allHeaders != nil) {
+      [_allHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *_Nonnull key, NSString *_Nonnull obj, BOOL *_Nonnull stop) {
         pj_str_t name = key.pjString;
         pj_str_t value = obj.pjString;
         pj_list_push_back((pjsip_hdr *) &msg_data.hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
@@ -829,6 +843,9 @@ NSString *const SBSCallEventEnd = @"call.ended";
       [self dispatchEvent:[SBSCallReceivedMessageEvent eventWithName:SBSCallEventReceivedMessage call:self message:message]];
       _lastMessage = message;
     }
+    
+    // Add all headers to the list
+    [_allHeaders addEntriesFromDictionary:headers];
   }
 }
 

@@ -23,48 +23,48 @@
  *  Possible errors the Endpoint can return.
  */
 typedef NS_ENUM(NSInteger, SBSEndpointError) {
-    /**
-     *  Unable to create the pjsip library.
-     */
-        SBSEndpointErrorCannotCreate,
-    /**
-     *  Unable to initialize the pjsip library.
-     */
-        SBSEndpointErrorCannotInitialize,
-    /**
-     *  Unable to add transport configuration to endpoint.
-     */
-        SBSEndpointErrorCannotAddTransportConfiguration,
-    /**
-     *  Unable to start the pjsip library.
-     */
-        SBSEndpointErrorCannotStart,
-    /**
-     *  Unable to create the thread for pjsip.
-     */
-        SBSEndpointErrorCannotRegisterThread,
-    /**
-     *  Unable to cleanly destroy the endpoint on shutdown.
-     */
-        SBSEndpointErrorCannotDestroy
+  /**
+   *  Unable to create the pjsip library.
+   */
+  SBSEndpointErrorCannotCreate,
+  /**
+   *  Unable to initialize the pjsip library.
+   */
+  SBSEndpointErrorCannotInitialize,
+  /**
+   *  Unable to add transport configuration to endpoint.
+   */
+  SBSEndpointErrorCannotAddTransportConfiguration,
+  /**
+   *  Unable to start the pjsip library.
+   */
+  SBSEndpointErrorCannotStart,
+  /**
+   *  Unable to create the thread for pjsip.
+   */
+  SBSEndpointErrorCannotRegisterThread,
+  /**
+   *  Unable to cleanly destroy the endpoint on shutdown.
+   */
+  SBSEndpointErrorCannotDestroy
 };
 
 /**
  *  Possible states that the endpoint can be in
  */
 typedef NS_ENUM(NSInteger, SBSEndpointState) {
-    /**
-     *  The endpoint is currently idle
-     */
-        SBSEndpointStateIdle,
-    /**
-     *  The endpoint has incoming calls that are ringing
-     */
-        SBSEndpointStateRingingCalls,
-    /**
-     *  The endpoint has active calls
-     */
-        SBSEndpointStateActiveCalls
+  /**
+   *  The endpoint is currently idle
+   */
+  SBSEndpointStateIdle,
+  /**
+   *  The endpoint has incoming calls that are ringing
+   */
+  SBSEndpointStateRingingCalls,
+  /**
+   *  The endpoint has active calls
+   */
+  SBSEndpointStateActiveCalls
 };
 
 @protocol SBSEndpointDelegate <NSObject>
@@ -192,7 +192,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * Handles a reachability change in the application
  *
  * The responsibility of this method is to recreate any transports that are necessary after the local IP address changes due
- * to a reachability event. It should make a best effort to restore any active calls that might be lost due to the IP change. 
+ * to a reachability event. It should make a best effort to restore any active calls that might be lost due to the IP change.
  * Primarily, this consists of simply sending a re-invite with the updated IP address.
  */
 - (void)handleReachabilityChange;

@@ -273,6 +273,16 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError * _Nullable);
 @property(strong, nonatomic, nullable, readonly) NSDate *completedAt;
 
 /**
+ * Returns the value for a specific header on the call
+ *
+ * This method is case-insensitive. All headers are stored in a map that is held lowercase internally,
+ * and this method applies the same case rules
+ *
+ * @param header the name of the header to get a value for
+ */
+- (NSString *_Nullable)valueForHeader:(NSString *_Nonnull)header;
+
+/**
  * Places the call associate with this instance
  *
  * SIP calls are not placed when they're created from the account. This method needs to be called in order
