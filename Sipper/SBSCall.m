@@ -6,6 +6,7 @@
 #import "SBSCall+Internal.h"
 
 #import <pjsua.h>
+#include <pjsua-lib/pjsua_internal.h>
 
 #import "NSString+PJString.h"
 #import "NSError+SipperError.h"
@@ -32,6 +33,7 @@ static SBSCallState convertState(pjsip_inv_state);
 static SBSMediaState convertMediaState(pjsua_call_media_status);
 static SBSMediaType convertMediaType(pjmedia_type);
 static SBSMediaDirection convertMediaDirection(pjmedia_dir);
+static SBSCallTransactionState convertTransactionState(pjsip_tsx_state_e);
 
 #pragma mark - Events
 
@@ -39,6 +41,7 @@ NSString *const SBSCallEventStateChange = @"call.state.changed";
 NSString *const SBSCallEventHoldStateChange = @"call.hold_state.changed";
 NSString *const SBSCallEventReceivedMessage = @"call.message.received";
 NSString *const SBSCallEventMuteStateChange = @"call.mute_state.changed";
+NSString *const SBSCallEventTransactionStateChange = @"call.transaction.state.changed";
 NSString *const SBSCallEventEnd = @"call.ended";
 
 @implementation SBSCallEvent
@@ -47,6 +50,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
   if (self = [super initWithName:name]) {
     _call = call;
   }
+  
   
   return self;
 }
@@ -89,6 +93,24 @@ NSString *const SBSCallEventEnd = @"call.ended";
 
 @end
 
+@implementation SBSCallTransactionStateChangeEvent
+
+- (instancetype)initWithEventName:(NSString *)name call:(SBSCall *)call method:(NSString *)method state:(SBSCallTransactionState)state error:(NSError *)error {
+  if (self = [super initWithEventName:name call:call]) {
+    _method = method;
+    _state = state;
+    _error = error;
+  }
+  
+  return self;
+}
+
++ (SBSCallTransactionStateChangeEvent *)eventWithName:(NSString *)name call:(SBSCall *)call method:(NSString *)method state:(SBSCallTransactionState)state error:(NSError *)error {
+  return [[SBSCallTransactionStateChangeEvent alloc] initWithEventName:name call:call method:method state:state error:error];
+}
+
+@end
+
 @implementation SBSCallEndedEvent
 
 - (instancetype)initWithEventName:(NSString *)name call:(SBSCall *)call error:(NSError *)error {
@@ -114,6 +136,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
 @property (nonatomic, nullable, strong) SBSRingtonePlayer *player;
 @property (nonatomic, nullable, strong) NSError *error;
 @property (nonatomic, nonnull, strong) NSMutableDictionary<NSString *, NSString *> *allHeaders;
+@property (nonatomic, nonnull, strong) NSDictionary<NSString *, NSString *> *initialHeaders;
 @property (nonatomic) BOOL ended;
 
 @end
@@ -127,11 +150,19 @@ NSString *const SBSCallEventEnd = @"call.ended";
                              destination:(NSString *)destination
                                  headers:(NSDictionary<NSString *, NSString *> *)headers {
   if (self = [super init]) {
+    _callId = -1;
+    _uuid = [NSUUID UUID];
     _endpoint = endpoint;
     _account = account;
     _destination = destination;
-    _allHeaders = [[NSMutableDictionary alloc] initWithDictionary:headers];
+    _initialHeaders = headers;
+    _allHeaders = [[NSMutableDictionary alloc] init];
+    _dispatcher = [[SBSEventDispatcher alloc] init];
     _ended = NO;
+    
+    [headers enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop) {
+      [_allHeaders setObject:obj forKey:[key lowercaseString]];
+    }];
   }
   
   return self;
@@ -144,10 +175,14 @@ NSString *const SBSCallEventEnd = @"call.ended";
                                   remote:(SBSNameAddressPair *)remote
                                   callId:(pjsua_call_id)callId {
   if (self = [super init]) {
+    _callId = -1;
+    _uuid = [NSUUID UUID];
     _endpoint = endpoint;
     _account = account;
     _remote = remote;
+    _initialHeaders = nil;
     _allHeaders = [[NSMutableDictionary alloc] init];
+    _dispatcher = [[SBSEventDispatcher alloc] init];
     _ended = NO;
     
     [self attachCall:callId];
@@ -161,7 +196,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
 - (void)dealloc {
   
   // Clear out the reference to ourselves
-  if (_callId > 0) {
+  if (_callId >= 0) {
     
     // Check if we were de-alloced before the call ended, in which case let's hang up
     if (_state != SBSCallStateDisconnected) {
@@ -191,7 +226,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
 //------------------------------------------------------------------------------
 
 - (NSString *)valueForHeader:(NSString *)header {
-  return [_allHeaders valueForKey:header];
+  return [_allHeaders valueForKey:[header lowercaseString]];
 }
 
 //------------------------------------------------------------------------------
@@ -211,6 +246,12 @@ NSString *const SBSCallEventEnd = @"call.ended";
 //------------------------------------------------------------------------------
 
 - (void)connectWithCompletion:(void (^)(BOOL, NSError *_Nullable))callback {
+  [self connectWithHeaders:nil completion:callback];
+}
+
+//------------------------------------------------------------------------------
+
+- (void)connectWithHeaders:(NSDictionary<NSString *,NSString *> *)headers completion:(SBSActionCallbackBlock)callback {
   if (callback == nil) {
     callback = ^(BOOL success, NSError *error) {
     };
@@ -230,8 +271,17 @@ NSString *const SBSCallEventEnd = @"call.ended";
     pjsua_msg_data_init(&msg_data);
     
     // Append any default headers
-    if (_allHeaders != nil) {
-      [_allHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *_Nonnull key, NSString *_Nonnull obj, BOOL *_Nonnull stop) {
+    if (_initialHeaders != nil) {
+      [_initialHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *_Nonnull key, NSString *_Nonnull obj, BOOL *_Nonnull stop) {
+        pj_str_t name = key.pjString;
+        pj_str_t value = obj.pjString;
+        pj_list_push_back((pjsip_hdr *) &msg_data.hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
+      }];
+    }
+    
+    // Append any call-specific headers
+    if (headers != nil) {
+      [headers enumerateKeysAndObjectsUsingBlock:^(NSString *_Nonnull key, NSString *_Nonnull obj, BOOL *_Nonnull stop) {
         pj_str_t name = key.pjString;
         pj_str_t value = obj.pjString;
         pj_list_push_back((pjsip_hdr *) &msg_data.hdr_list, pjsip_generic_string_hdr_create(pool, &name, &value));
@@ -240,7 +290,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
     
     // Create the call now
     pjsua_call_id id;
-    pj_str_t dst = _remote.uri.description.pjString;
+    pj_str_t dst = _destination.pjString;
     pj_status_t status = pjsua_call_make_call(_account.accountId, &dst, &setting, NULL, &msg_data, &id);
     
     // Discard the pool to cleanup
@@ -259,6 +309,8 @@ NSString *const SBSCallEventEnd = @"call.ended";
       [self attachCall:id];
     }
   }];
+  
+  _startedAt = [[NSDate alloc] init];
 }
 
 //------------------------------------------------------------------------------
@@ -275,10 +327,6 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
   // Stop the ringtone if it's currently playing and we have a response code
   // that justifies stopping it
   if (code != SBSStatusCodeProgress && code != SBSStatusCodeRinging) {
@@ -286,6 +334,10 @@ NSString *const SBSCallEventEnd = @"call.ended";
   }
   
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
     pj_status_t status = pjsua_call_answer(_callId, (pjsip_status_code) code, NULL, NULL);
     
     // Execute the remaining method back in the main thread
@@ -320,15 +372,22 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
   // Stop the ringtone if it's currently playing
   [self.player stop];
   
   // Answer the call in the appropriate thread (it doesn't happen immediately)
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
+    // Mark the call as ending. At this point, no further status change events will be sent
+    if (_state != SBSCallStateDisconnecting) {
+      _state = SBSCallStateDisconnecting;
+      [self dispatchEvent:[SBSCallEvent eventWithName:SBSCallEventStateChange call:self]];
+    }
+    
+    // Attempt to actually hang up the call
     pj_status_t status = pjsua_call_hangup(_callId, (pjsip_status_code) code, NULL, NULL);
     
     // Execute the remaining method back in the main thread
@@ -357,11 +416,20 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
+    // See if we can even hold anything
+    pjsua_call_info info;
+    pjsua_call_get_info(_callId, &info);
+    
+    if (info.media_cnt == 0) {
+      callback(YES, nil);
+      return;
+    }
+    
     pj_status_t status = pjsua_call_set_hold2(_callId, 0, NULL);
     
     // Execute the remaining method back in the main thread
@@ -390,14 +458,15 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
     
+    setting.aud_cnt = 1;
     setting.flag = PJSUA_CALL_UNHOLD;
     pj_status_t status = pjsua_call_reinvite2(_callId, &setting, NULL);
     
@@ -427,13 +496,18 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
+  // Re-invite will re-create the media channel
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+
+    // Send a re-invite and start a new media channel
     pjsua_call_setting setting;
     pjsua_call_setting_default(&setting);
+    
+    setting.aud_cnt = 1;
+    setting.flag = PJSUA_CALL_REINIT_MEDIA;
     pj_status_t status = pjsua_call_reinvite2(_callId, &setting, NULL);
     
     // Execute the remaining method back in the main thread
@@ -452,6 +526,16 @@ NSString *const SBSCallEventEnd = @"call.ended";
       callback(NO, error);
     });
   }];
+}
+
+//------------------------------------------------------------------------------
+
+- (BOOL)shutdownTransports {
+  if (_transport != NULL) {
+    return pjsip_transport_shutdown((pjsip_transport *) _transport) != 0;
+  }
+  
+  return YES;
 }
 
 //------------------------------------------------------------------------------
@@ -475,12 +559,12 @@ NSString *const SBSCallEventEnd = @"call.ended";
     callback = ^(BOOL success, NSError *error) {
     };
   }
-  
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
+
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
     pj_str_t input_string = digits.pjString;
     pj_status_t status = pjsua_call_dial_dtmf(_callId, &input_string);
     
@@ -509,16 +593,16 @@ NSString *const SBSCallEventEnd = @"call.ended";
     };
   }
   
-  if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
-    return;
-  }
-  
   SBSSipURI *uri = [SBSSipURI sipUriWithString:destination];
   if (uri == nil) {
     destination = [NSString stringWithFormat:@"sip:%@@%@", destination, self.account.configuration.sipDomain];
   }
   
   [self.endpoint performAsync:^{
+    if ([self validateCallAndFailIfNecessaryWithCompletion:callback]) {
+      return;
+    }
+    
     pj_str_t destination_string = destination.pjString;
     pj_status_t status = pjsua_call_xfer(_callId, &destination_string, NULL);
     
@@ -587,12 +671,14 @@ NSString *const SBSCallEventEnd = @"call.ended";
   pj_status_t status = pjsua_call_get_info(_callId, &info);
   
   // Getting call info *will* fail when the call has been disconnected, so catch that
-  // and update as appropriate. This is an unfortunate issue in pjsip that I don't
-  // have a clean solution for yet
+  // and update as appropriate.
   if (status == PJSIP_ESESSIONTERMINATED) {
     _state = SBSCallStateDisconnected;
   } else if (status == PJ_SUCCESS) {
-    _state = convertState(info.state);
+    SBSCallState convertedState = convertState(info.state);
+    if (_state != SBSCallStateDisconnecting || convertedState == SBSCallStateDisconnected) {
+      _state = convertState(info.state);
+    }
   }
   
   // If the call state is not ringing, stop the ringtone player
@@ -713,7 +799,10 @@ NSString *const SBSCallEventEnd = @"call.ended";
     if (media.type == PJMEDIA_TYPE_AUDIO && media.status == PJSUA_CALL_MEDIA_ACTIVE) {
       pjsua_conf_connect(media.stream.aud.conf_slot, 0);
       
-      // Only connect the microphone to the output if we're not muted
+      // Only connect the microphone to the output if we're not muted. When we're muted, we
+      // connect the bridge to the null port. This ensures we continue to send 0 RTP data, as
+      // opposed to not sending any RTP data at all which would cause the call to drop for
+      // many providers
       if (!_muted) {
         pjsua_conf_connect(0, media.stream.aud.conf_slot);
       } else {
@@ -738,6 +827,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
 //------------------------------------------------------------------------------
 
 - (void)endCallWithError:(NSError *)error {
+  _ended = YES;
   SBSCallEndedEvent *event = [SBSCallEndedEvent eventWithName:SBSCallEventEnd call:self error:error];
   
   // Check to see if we need to update the call's state
@@ -748,6 +838,13 @@ NSString *const SBSCallEventEnd = @"call.ended";
   
   // Now fire the call end event
   [self dispatchEvent:event];
+  
+  // Clean up the associated user data for this call ID in PJSIP. Not doing this
+  // can leave dangling pointers associated with the call.
+  if (_callId >= 0) {
+    pjsua_call_set_user_data(_callId, NULL);
+    _callId = -1;
+  }
 }
 
 //------------------------------------------------------------------------------
@@ -802,15 +899,22 @@ NSString *const SBSCallEventEnd = @"call.ended";
     }
   }
   
+  // Create the event for the transaction state change
+  SBSCallTransactionState state = convertTransactionState(transaction->state);
+  NSString *method = [NSString stringWithPJString:transaction->method.name];
+  NSError *error = nil;
+  
   // Check and see if we had a transport error, and drop the call if so
   if (transaction->transport_err != PJ_SUCCESS) {
-    pjsua_call_hangup(_callId, PJSIP_SC_TSX_TRANSPORT_ERROR, NULL, NULL);
-    _error = [NSError ErrorWithUnderlying:nil
+    error = [NSError ErrorWithUnderlying:nil
                   localizedDescriptionKey:NSLocalizedString(@"Transport failure during SIP message", nil)
               localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), transaction->transport_err]
                               errorDomain:CallErrorDomain
                                 errorCode:SBSCallErrorTransportFailure];
   }
+  
+  // Dispatch an event for the messag echange
+  [self dispatchEvent:[SBSCallTransactionStateChangeEvent eventWithName:SBSCallEventTransactionStateChange call:self method:method state:state error:error]];
   
   // If this is a response message from the remote, parse the response
   if (event->type == PJSIP_EVENT_TSX_STATE && event->body.tsx_state.type == PJSIP_EVENT_RX_MSG) {
@@ -818,6 +922,7 @@ NSString *const SBSCallEventEnd = @"call.ended";
     
     // Parse all of the headers out of the response message
     NSDictionary *headers = [SBSSipUtilities headersFromMessage:response->msg_info.msg];
+    [_allHeaders addEntriesFromDictionary:headers];
     
     // Check for response message types
     if (response->msg_info.msg->type == PJSIP_REQUEST_MSG) {
@@ -830,8 +935,8 @@ NSString *const SBSCallEventEnd = @"call.ended";
                                                                                  headers:headers];
       
       // Invoke the delegate method that we received a new response
-      [self dispatchEvent:[SBSCallReceivedMessageEvent eventWithName:SBSCallEventReceivedMessage call:self message:message]];
       _lastMessage = message;
+      [self dispatchEvent:[SBSCallReceivedMessageEvent eventWithName:SBSCallEventReceivedMessage call:self message:message]];
     } else {
       pj_str_t reason = response->msg_info.msg->line.req.method.name;
       pj_str_t call_id = response->msg_info.cid->id;
@@ -840,12 +945,9 @@ NSString *const SBSCallEventEnd = @"call.ended";
                                                                            headers:headers];
       
       // Invoke the delegate method that we received a new response
-      [self dispatchEvent:[SBSCallReceivedMessageEvent eventWithName:SBSCallEventReceivedMessage call:self message:message]];
       _lastMessage = message;
+      [self dispatchEvent:[SBSCallReceivedMessageEvent eventWithName:SBSCallEventReceivedMessage call:self message:message]];
     }
-    
-    // Add all headers to the list
-    [_allHeaders addEntriesFromDictionary:headers];
   }
 }
 
@@ -939,6 +1041,29 @@ static SBSMediaDirection convertMediaDirection(pjmedia_dir direction) {
       return SBSMediaDirectionInbound;
     case PJMEDIA_DIR_ENCODING_DECODING:
       return SBSMediaDirectionBidirectional;
+  }
+}
+
+static SBSCallTransactionState convertTransactionState(pjsip_tsx_state_e state) {
+  switch (state) {
+    case PJSIP_TSX_STATE_PROCEEDING:
+      return SBSCallTransactionStateProceeding;
+    case PJSIP_TSX_STATE_DESTROYED:
+      return SBSCallTransactionStateDestroyed;
+    case PJSIP_TSX_STATE_CONFIRMED:
+      return SBSCallTransactionStateConfirmed;
+    case PJSIP_TSX_STATE_COMPLETED:
+      return SBSCallTransactionStateCompleted;
+    case PJSIP_TSX_STATE_CALLING:
+      return SBSCallTransactionStateCalling;
+    case PJSIP_TSX_STATE_TRYING:
+      return SBSCallTransactionStateTrying;
+    case PJSIP_TSX_STATE_NULL:
+      return SBSCallTransactionStatePending;
+    case PJSIP_TSX_STATE_TERMINATED:
+      return SBSCallTransactionStateTerminated;
+    default:
+      return SBSCallTransactionStatePending;
   }
 }
 

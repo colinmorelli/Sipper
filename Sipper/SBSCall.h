@@ -22,6 +22,7 @@ extern NSString *_Nonnull const SBSCallEventReceivedMessage;
 extern NSString *_Nonnull const SBSCallEventMuteStateChange;
 extern NSString *_Nonnull const SBSCallEventHoldStateChange;
 extern NSString *_Nonnull const SBSCallEventMediaDescriptionChange;
+extern NSString *_Nonnull const SBSCallEventTransactionStateChange;
 extern NSString *_Nonnull const SBSCallEventEnd;
 
 /**
@@ -53,6 +54,10 @@ typedef NS_ENUM(NSInteger, SBSCallState) {
    */
   SBSCallStatePending,
   /**
+   *  Call is in the process of disconnecting
+   */
+  SBSCallStateDisconnecting,
+  /**
    *  Call has been disconnected, and is no longer valid
    */
   SBSCallStateDisconnected,
@@ -76,6 +81,44 @@ typedef NS_ENUM(NSInteger, SBSCallState) {
    *  Call is currently active and connected
    */
   SBSCallStateActive
+};
+
+/**
+ *  Different transaction states
+ */
+typedef NS_ENUM(NSInteger, SBSCallTransactionState) {
+  /**
+   *  Transaction is currently pending
+   */
+  SBSCallTransactionStatePending,
+  /**
+   *  Transaction was just sent out
+   */
+  SBSCallTransactionStateCalling,
+  /**
+   *  Transaction was just received
+   */
+  SBSCallTransactionStateTrying,
+  /**
+   *  Transaction just sent/received a provisional response
+   */
+  SBSCallTransactionStateProceeding,
+  /**
+   *  Transaction just sent/received a final respnose
+   */
+  SBSCallTransactionStateCompleted,
+  /**
+   *  Transaction just received a confirmation
+   */
+  SBSCallTransactionStateConfirmed,
+  /**
+   *  Transaction will be destroyed
+   */
+  SBSCallTransactionStateTerminated,
+  /**
+   *  Transaction is going to be destroyed now
+   */
+  SBSCallTransactionStateDestroyed
 };
 
 /**
@@ -179,6 +222,25 @@ typedef NS_ENUM(NSInteger, SBSCallError) {
  * The error that caused the call to end, if any
  */
 @property(readonly, strong, nonnull, nonatomic) NSError *error;
+
+@end
+
+@interface SBSCallTransactionStateChangeEvent : SBSCallEvent
+
+/**
+ * The method that the transaction represents
+ */
+@property(readonly, strong, nonnull, nonatomic) NSString *method;
+
+/**
+ * Current state of the transaction
+ */
+@property (readonly, nonatomic) SBSCallTransactionState state;
+
+/**
+ * The error that has occurred on the transaction, if one happened
+ */
+@property(readonly, strong, nullable, nonatomic) NSError *error;
 
 @end
 
@@ -293,6 +355,17 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError * _Nullable);
 - (void)connectWithCompletion:(SBSActionCallbackBlock _Nullable)callback;
 
 /**
+ * Places the call associate with this instance
+ *
+ * SIP calls are not placed when they're created from the account. This method needs to be called in order
+ * to send the INVITE request
+ *
+ * @param headers  the headers to include when dialing
+ * @param callback callback to invoke on completion
+ */
+- (void)connectWithHeaders:(NSDictionary<NSString *, NSString *> * _Nullable)headers completion:(SBSActionCallbackBlock _Nullable)callback;
+
+/**
  * Answers the call with a 200 OK status code
  *
  * This is a convenience method for the alternative ANSWER implementation that takes a status code.
@@ -375,6 +448,11 @@ typedef void (^SBSActionCallbackBlock)(BOOL successful, NSError * _Nullable);
  * @param callback a callback that will be invoked when the call is reinvited
  */
 - (void)reinviteWithCallback:(SBSActionCallbackBlock _Nullable)callback;
+
+/**
+ * Attempts to shut down the transports associated with this call
+ */
+- (BOOL)shutdownTransports;
 
 /**
  * Sends the requested digits as DTMF tones

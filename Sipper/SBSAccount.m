@@ -33,6 +33,7 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
 
 - (instancetype)initWithConfiguration:(SBSAccountConfiguration *)configuration endpoint:(SBSEndpoint *)endpoint accountId:(pjsua_acc_id)accountId {
   if (self = [super init]) {
+    _uuid = [NSUUID UUID];
     _accountId = accountId;
     _endpoint = endpoint;
     _calls = [NSHashTable weakObjectsHashTable];
@@ -347,6 +348,7 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
   }
   
   config->id = configuration.sipAddress.pjString;
+  //config->transport_id = 0;
   config->reg_uri = registrarUri.pjString;
   config->register_on_acc_add = false;
   config->publish_enabled = configuration.sipPublishEnabled ? PJ_TRUE : PJ_FALSE;
@@ -354,6 +356,8 @@ static NSString *const AccountErrorDomain = @"sipper.account.error";
   config->reg_retry_interval = (int) configuration.sipRegistrationRetryTimeout;
   config->use_rfc5626 = true;
   config->use_srtp = [self convertSrtpPolicy:configuration.secureMediaPolicy];
+  config->ipv6_media_use = PJSUA_IPV6_ENABLED;
+  config->media_stun_use = PJSUA_STUN_USE_DEFAULT;
   
   // Add custom headers if there are any to add
   if (configuration.registrationHeaders != nil) {

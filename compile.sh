@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SDK to build iOS against. This SDK must be installed.
-export IOS_SDK_VERSION='9.3'
+export IOS_SDK_VERSION='10.3'
 
 # Minimum iOS version to target
 export MIN_IOS_VERSION='8.0'
@@ -14,6 +14,9 @@ export OPUS_VERSION='1.1.2'
 
 # The version of PJSIP to checkout. Can be either "trunk" or a valid tag
 export PJSIP_VERSION='trunk'
+
+# PJSIP revision (when using trunk)
+export PJSIP_REVISION=''
 
 # Base directory to write
 export BASE_DIR=`pwd -P`
@@ -247,9 +250,13 @@ function clean_pjsip() {
 function checkout_pjsip() {
   BASE_URL="http://svn.pjsip.org/repos/pjproject"
 
-  echo "$PRE Checking out PJSIP ${PJSIP_VERSION}"
+  echo "$PRE Checking out PJSIP ${PJSIP_VERSION} (r${PJSIP_REVISION})"
   if [ "$PJSIP_VERSION" = "trunk" ]; then
-      CHECKOUT_URL="${BASE_URL}/trunk"
+      if [ -z "$PJSIP_REVISION" ]; then
+          CHECKOUT_URL="${BASE_URL}/trunk"
+      else
+          CHECKOUT_URL="${BASE_URL}/trunk/@${PJSIP_REVISION}"
+      fi
   else
       CHECKOUT_URL="${BASE_URL}/tags/${PJSIP_VERSION}/"
   fi
@@ -257,6 +264,12 @@ function checkout_pjsip() {
   rm -rf "$SOURCE_DIR/pjsip"
   svn export "${CHECKOUT_URL}" "$SOURCE_DIR/pjsip"
   echo "$PRE Successfully checked out PJSIP"
+}
+
+function patch_pjsip() {
+  for file in "$BASE_DIR/patches/pjsip/*.patch"; do
+    patch -p0 -d "${SOURCE_DIR}/pjsip" < $file
+  done
 }
 
 function compile_pjsip() {
@@ -331,6 +344,7 @@ function headers_pjsip() {
 function pjsip() {
   clean_pjsip
   checkout_pjsip
+  patch_pjsip
   compile_pjsip $ARCH
   lipo_pjsip
   headers_pjsip

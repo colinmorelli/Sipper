@@ -112,6 +112,11 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
 @property(weak, nonatomic, nullable) id <SBSEndpointDelegate> delegate;
 
 /**
+ * Whether or not audio is currently enabled
+ */
+@property(nonatomic, readonly) BOOL audioEnabled;
+
+/**
  * Initializes the SIP endpoint
  *
  * This method sets up underlying data structures and functions to prepare the endpoint for use
@@ -177,7 +182,7 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * @param error       error pointer to assign if the operation fails
  * @return if the operation was successful
  */
-- (BOOL)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> *_Nonnull)descriptors error:(NSError *_Nullable *_Nullable)error;
+- (void)updatePreferredCodecs:(NSArray<SBSCodecDescriptor *> * _Nonnull)descriptors completion:(void (^ _Nullable)(BOOL, NSError * _Nullable))callback;
 
 /**
  * Executes the requested block in a background thread that is safe for the endpoint
@@ -187,6 +192,17 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * or using this method.
  */
 - (void)performAsync:(void (^ _Nonnull)())block;
+
+/**
+ * Updates the endpoint's hardware audio sampling rate
+ *
+ * This method can be safely invoked at runtime, during an active call. It executes a multi-step process, where it will first
+ * shut down the sound device, then update the media sample rate, and then attempt to re-open the sound device before connecting
+ * it back into the conference bridge.
+ *
+ * @param sampleRate the new sample rate to open the audio device with
+ */
+- (void)updateDeviceSampleRate:(NSUInteger)rate;
 
 /**
  * Handles a reachability change in the application

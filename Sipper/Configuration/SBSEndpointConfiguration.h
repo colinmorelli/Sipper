@@ -84,6 +84,38 @@ typedef void (^LoggingHandler)(SBSLogLevel, NSString *_Nonnull);
 @property(nonatomic) NSUInteger sndClockRate;
 
 /**
+ *  Jitter buffer initial size, in MS
+ *
+ *
+ *  Default value: -1 (uses PJSIP default)
+ */
+@property(nonatomic) NSUInteger jbInit;
+
+/**
+ *  Jitter buffer initial size, in MS
+ *
+ *
+ *  Default value: -1 (uses PJSIP default)
+ */
+@property(nonatomic) NSUInteger jbMinPre;
+
+/**
+ *  Jitter buffer minimum prefetch size (min latency), in MS
+ *
+ *
+ *  Default value: -1 (uses PJSIP default)
+ */
+@property(nonatomic) NSUInteger jbMaxPre;
+
+/**
+ *  Jitter buffer maximum prefetch size (max latency), in MS
+ *
+ *
+ *  Default value: -1 (uses PJSIP default)
+ */
+@property(nonatomic) NSUInteger jbMax;
+
+/**
  *  An array which will hold all the configured transports.
  */
 @property(strong, nonatomic, nonnull) NSArray *transportConfigurations;

@@ -59,6 +59,7 @@
 		E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */; };
 		E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED211CC81B230007C4E5 /* CFNetwork.framework */; };
 		E7D243011D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m in Sources */ = {isa = PBXBuildFile; fileRef = E7D243001D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m */; };
+		E7F173601DCD169000033804 /* pj_nat64.c in Sources */ = {isa = PBXBuildFile; fileRef = E7F1735E1DCD169000033804 /* pj_nat64.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -148,6 +149,8 @@
 		E7CDED211CC81B230007C4E5 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		E7D242FF1D2DB37300BCD2DC /* SBSBlockEventListener+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSBlockEventListener+Internal.h"; sourceTree = "<group>"; };
 		E7D243001D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SBSBlockEventListener+Internal.m"; sourceTree = "<group>"; };
+		E7F1735E1DCD169000033804 /* pj_nat64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pj_nat64.c; sourceTree = "<group>"; };
+		E7F1735F1DCD169000033804 /* pj_nat64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pj_nat64.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -247,6 +250,7 @@
 		E78E57031CC7B50900FDA80D /* Sipper */ = {
 			isa = PBXGroup;
 			children = (
+				E7F1735D1DCD167B00033804 /* NAT64 */,
 				E74E59671D01FE8400AD3F17 /* Events */,
 				E78E588C1CC7C06000FDA80D /* Categories */,
 				E78E58821CC7B98300FDA80D /* Configuration */,
@@ -316,6 +320,15 @@
 				E79D73D71CC9953800400F86 /* SBSSipURI.m */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		E7F1735D1DCD167B00033804 /* NAT64 */ = {
+			isa = PBXGroup;
+			children = (
+				E7F1735E1DCD169000033804 /* pj_nat64.c */,
+				E7F1735F1DCD169000033804 /* pj_nat64.h */,
+			);
+			name = NAT64;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -470,6 +483,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E7A9F6C61D8F517200A798DD /* SBSSipUtilities+Internal.m in Sources */,
+				E7F173601DCD169000033804 /* pj_nat64.c in Sources */,
 				E77122AB1D8ED1D70082D511 /* SBSSipResponseMessage.m in Sources */,
 				E74E59661D01FB9700AD3F17 /* SBSEventDispatcher.m in Sources */,
 				E77122A51D8EC7960082D511 /* SBSLogger.m in Sources */,
