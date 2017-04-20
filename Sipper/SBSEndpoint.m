@@ -19,6 +19,7 @@
 #import "SBSCodecDescriptor.h"
 #import "SBSEndpointConfiguration.h"
 #import "SBSTransportConfiguration.h"
+#import "SBSRingbackDescription.h"
 #import "pj_nat64.h"
 #import <pjsua.h>
 #import <pjsua-lib/pjsua_internal.h>
@@ -43,12 +44,16 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
 @interface SBSEndpoint () {
   pj_thread_desc pjBackgroundThreadDesc;
   pj_thread_t *pjBackgroundThread;
+  pjmedia_port *pjRingbackPort;
+  pjsua_conf_port_id pjRingbackConfPort;
 }
 
 @property(strong, nonatomic) NSArray *activeTransports;
 @property(strong, nonatomic) NSThread *backgroundThread;
 @property(strong, nonatomic) NSMutableDictionary *accountsDictionary;
 @property(strong, nonatomic) NSMutableDictionary *accountsMap;
+@property(strong, nonatomic) NSSet<NSNumber *> *ringingCalls;
+@property(nonatomic) BOOL playingRingback;
 
 @end
 
@@ -64,6 +69,7 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
     _accountsMap = [[NSMutableDictionary alloc] init];
     _activeTransports = [NSArray array];
     _state = SBSEndpointStateIdle;
+    _ringbackDescription = [SBSRingbackDescription usRingback];
   }
   
   return self;
@@ -176,6 +182,41 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
   
   // Disable sound device by default
   pjsua_set_no_snd_dev();
+  
+  // Create a tone generator to use for ringback
+  pj_str_t ringback = pj_str("ringback");
+  int samples_per_frame = media_config.audio_frame_ptime *
+                          media_config.clock_rate *
+                          media_config.channel_count / 1000;
+  
+  status = pjmedia_tonegen_create2(pjsua_var.pool, &ringback,
+                          media_config.snd_clock_rate,
+                          media_config.channel_count,
+                          samples_per_frame,
+                          16,
+                          PJMEDIA_TONEGEN_LOOP,
+                          &pjRingbackPort);
+  if (status != PJ_SUCCESS) {
+    [self destroyEndpointWithError:nil];
+    *error = [NSError ErrorWithUnderlying:nil
+                  localizedDescriptionKey:NSLocalizedString(@"Could not create the tone generator", nil)
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                              errorDomain:EndpointErrorDomain
+                                errorCode:SBSEndpointErrorCannotRegisterThread];
+    return NO;
+  }
+  
+  // Register tone generator with the conference bridge
+  status = pjsua_conf_add_port(pjsua_var.pool, pjRingbackPort, &pjRingbackConfPort);
+  if (status != PJ_SUCCESS) {
+    [self destroyEndpointWithError:nil];
+    *error = [NSError ErrorWithUnderlying:nil
+                  localizedDescriptionKey:NSLocalizedString(@"Could not register the tone generator with the conference bridge", nil)
+              localizedFailureReasonError:[NSString stringWithFormat:NSLocalizedString(@"PJSIP status code: %d", nil), status]
+                              errorDomain:EndpointErrorDomain
+                                errorCode:SBSEndpointErrorCannotRegisterThread];
+    return NO;
+  }
   
   // Update the configuration that is in use
   _configuration = configuration;
@@ -415,9 +456,9 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
 //------------------------------------------------------------------------------
 
 - (void)reconcileState {
-  NSUInteger activeCalls = 0,
-  ringingCalls = 0;
+  NSUInteger activeCalls = 0, ringingCalls = 0, ringbackCalls = 0;
   
+  // Check the status of all active calls
   for (SBSCall *call in self.calls) {
     if (call.state == SBSCallStateDisconnected || call.state == SBSCallStatePending) {
       continue;
@@ -428,6 +469,41 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
     } else if (call.state == SBSCallStateIncoming || call.state == SBSCallStateEarly) {
       ringingCalls++;
     }
+    
+    // Call is in early state with no active media legs, which means we should be playing a ringback
+    if (call.state == SBSCallStateEarly && call.media.count == 0) {
+      ringbackCalls++;
+    }
+  }
+  
+  // Play a ringback tone if we need to
+  if (ringbackCalls > 0 && !_playingRingback && _ringbackDescription != nil) {
+    pjmedia_tone_desc tones[_ringbackDescription.tones.count];
+    pj_bzero(&tones, sizeof(tones));
+    int i = 0;
+    
+    for (SBSRingbackTone *tone in _ringbackDescription.tones) {
+      tones[i].freq1 = tone.firstFrequency;
+      tones[i].freq2 = tone.secondFrequency;
+      tones[i].on_msec = tone.onMs;
+      tones[i].off_msec = tone.offMs;
+      i++;
+    }
+    
+    if (i > 0) {
+      tones[i - 1].off_msec = _ringbackDescription.intervalMs;
+    }
+    
+    if (i > 0) {
+      pjmedia_tonegen_play(pjRingbackPort, i, tones, PJMEDIA_TONEGEN_LOOP);
+      pjsua_conf_connect(pjRingbackConfPort, 0);
+      _playingRingback = YES;
+    }
+  } else if (ringbackCalls == 0 && _playingRingback) {
+    pjsua_conf_disconnect(pjRingbackConfPort, 0);
+    pjmedia_tonegen_stop(pjRingbackPort);
+    pjmedia_tonegen_rewind(pjRingbackPort);
+    _playingRingback = NO;
   }
   
   SBSEndpointState endpointState = SBSEndpointStateIdle;

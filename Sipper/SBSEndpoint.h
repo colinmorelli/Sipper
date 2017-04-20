@@ -18,6 +18,7 @@
 @class SBSCodecDescriptor;
 @class SBSEndpoint;
 @class SBSEndpointConfiguration;
+@class SBSRingbackDescription;
 
 /**
  *  Possible errors the Endpoint can return.
@@ -110,6 +111,13 @@ typedef NS_ENUM(NSInteger, SBSEndpointState) {
  * Delegate to receive events for the endpoint
  */
 @property(weak, nonatomic, nullable) id <SBSEndpointDelegate> delegate;
+
+/**
+ * Sets the ringback profile to use for playing ringbacks (defaults to US)
+ *
+ * Set to nil to disable ringbacks entirely on the device
+ */
+@property(nonatomic, readonly, nullable) SBSRingbackDescription *ringbackDescription;
 
 /**
  * Whether or not audio is currently enabled

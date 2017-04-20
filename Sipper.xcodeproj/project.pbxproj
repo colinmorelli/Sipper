@@ -58,6 +58,7 @@
 		E7CDED1E1CC81AF90007C4E5 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */; };
 		E7CDED201CC81B200007C4E5 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */; };
 		E7CDED221CC81B230007C4E5 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E7CDED211CC81B230007C4E5 /* CFNetwork.framework */; };
+		E7CE1DF01EA8457D0049DD54 /* SBSRingbackDescription.m in Sources */ = {isa = PBXBuildFile; fileRef = E7CE1DEF1EA8457D0049DD54 /* SBSRingbackDescription.m */; };
 		E7D243011D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m in Sources */ = {isa = PBXBuildFile; fileRef = E7D243001D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m */; };
 		E7F173601DCD169000033804 /* pj_nat64.c in Sources */ = {isa = PBXBuildFile; fileRef = E7F1735E1DCD169000033804 /* pj_nat64.c */; };
 /* End PBXBuildFile section */
@@ -147,6 +148,8 @@
 		E7CDED1D1CC81AF90007C4E5 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		E7CDED1F1CC81B200007C4E5 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		E7CDED211CC81B230007C4E5 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		E7CE1DEE1EA8457D0049DD54 /* SBSRingbackDescription.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SBSRingbackDescription.h; sourceTree = "<group>"; };
+		E7CE1DEF1EA8457D0049DD54 /* SBSRingbackDescription.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SBSRingbackDescription.m; sourceTree = "<group>"; };
 		E7D242FF1D2DB37300BCD2DC /* SBSBlockEventListener+Internal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SBSBlockEventListener+Internal.h"; sourceTree = "<group>"; };
 		E7D243001D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SBSBlockEventListener+Internal.m"; sourceTree = "<group>"; };
 		E7F1735E1DCD169000033804 /* pj_nat64.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = pj_nat64.c; sourceTree = "<group>"; };
@@ -286,6 +289,8 @@
 				E78E58871CC7BACA00FDA80D /* SBSEndpointConfiguration.m */,
 				E78E58891CC7BC1700FDA80D /* SBSTransportConfiguration.h */,
 				E78E588A1CC7BC1700FDA80D /* SBSTransportConfiguration.m */,
+				E7CE1DEE1EA8457D0049DD54 /* SBSRingbackDescription.h */,
+				E7CE1DEF1EA8457D0049DD54 /* SBSRingbackDescription.m */,
 			);
 			path = Configuration;
 			sourceTree = "<group>";
@@ -487,6 +492,7 @@
 				E77122AB1D8ED1D70082D511 /* SBSSipResponseMessage.m in Sources */,
 				E74E59661D01FB9700AD3F17 /* SBSEventDispatcher.m in Sources */,
 				E77122A51D8EC7960082D511 /* SBSLogger.m in Sources */,
+				E7CE1DF01EA8457D0049DD54 /* SBSRingbackDescription.m in Sources */,
 				E78E58851CC7B99700FDA80D /* SBSAccountConfiguration.m in Sources */,
 				E78E588B1CC7BC1700FDA80D /* SBSTransportConfiguration.m in Sources */,
 				E7D243011D2DB37300BCD2DC /* SBSBlockEventListener+Internal.m in Sources */,

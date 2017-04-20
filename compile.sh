@@ -267,8 +267,8 @@ function checkout_pjsip() {
 }
 
 function patch_pjsip() {
-  for file in "$BASE_DIR/patches/pjsip/*.patch"; do
-    patch -p0 -d "${SOURCE_DIR}/pjsip" < $file
+  for file in $BASE_DIR/patches/pjsip/*.patch; do
+    patch -p0 -d "${SOURCE_DIR}/pjsip" < "$file"
   done
 }
 

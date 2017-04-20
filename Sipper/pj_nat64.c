@@ -406,7 +406,7 @@ pj_status_t ipv6_mod_on_tx(pjsip_tx_data *tdata)
   pjsip_media_type_init2(&app_sdp, "application", "sdp");
   pjsip_msg *msg = tdata->msg;
   
-  if (tdata->msg->body != NULL && tdata->msg->line.req.method.id == PJSIP_INVITE_METHOD && (transport_type & PJSIP_TRANSPORT_IPV6) == PJSIP_TRANSPORT_IPV6) {
+  if (tdata->msg->body != NULL && tdata->msg->line.req.method.id == PJSIP_INVITE_METHOD) {
     pjsip_media_type media_type = tdata->msg->body->content_type;
     
     // If this is an SDP...
