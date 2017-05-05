@@ -602,6 +602,7 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
   pjsua_media_config_default(config);
   config->enable_ice = PJ_TRUE;
   config->ice_no_rtcp = PJ_TRUE;
+  config->ice_always_update = PJ_FALSE;
   config->ice_max_host_cands = 12;
   config->snd_auto_close_time = 0;
   config->clock_rate = (unsigned int) configuration.clockRate == 0 ? PJSUA_DEFAULT_CLOCK_RATE : (unsigned int) configuration.clockRate;
@@ -643,7 +644,6 @@ static void onCreateMediaTransportSrtp(pjsua_call_id call_id, unsigned media_idx
 
 //------------------------------------------------------------------------------
 #pragma mark - Factory
-
 //------------------------------------------------------------------------------
 + (instancetype)sharedEndpoint {
   static dispatch_once_t p = 0;

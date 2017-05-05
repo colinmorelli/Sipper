@@ -411,16 +411,19 @@ pj_status_t ipv6_mod_on_tx(pjsip_tx_data *tdata)
     
     // If this is an SDP...
     if (pjsip_media_type_cmp(&app_sdp, &media_type, 0) == 0) {
+      PJ_LOG(3, (THIS_FILE, "Detected outgoing INVITE with SDP, adding fake IPv4 candidate to list"));
       pjmedia_sdp_session *sdp = (pjmedia_sdp_session *) msg->body->data;
+      pjmedia_sdp_session *cloned = pjmedia_sdp_session_clone(tdata->pool, sdp);
 
       // Attempt to synthesize IPv6 addresses for IPv4 ICE candidates
-      pj_status_t status = append_ipv4_ice_candidate(tdata->pool, sdp);
+      pj_status_t status = append_ipv4_ice_candidate(tdata->pool, cloned);
       if (status != PJ_SUCCESS) {
         PJ_LOG(3, (THIS_FILE, "Error encountered while creating fake IPv4 candidate, leaving original message in-tact"));
         return PJ_SUCCESS;
       }
       
       // Copy back over the original buffer so pjsip is aware of the new message
+      msg->body->data = cloned;
       pjsip_tx_data_invalidate_msg(tdata);
       status = pjsip_tx_data_encode(tdata);
       if (status != PJ_SUCCESS) {
