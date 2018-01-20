@@ -1,0 +1,20 @@
+--- pjmedia/src/pjmedia/jbuf.c	2017-04-24 16:56:54.000000000 -0400
++++ pjmedia/src/pjmedia/jbuf.c	2017-04-24 17:55:07.000000000 -0400
+@@ -167,7 +167,7 @@ struct pjmedia_jbuf
+ /* Enabling this would log the jitter buffer state about once per
+  * second.
+  */
+-#if 0
++#if 1
+ #  define TRACE__(args)	    PJ_LOG(5,args)
+ #else
+ #  define TRACE__(args)
+@@ -577,7 +577,7 @@ PJ_DEF(pj_status_t) pjmedia_jbuf_create(
+     pj_math_stat_init(&jb->jb_delay);
+     pj_math_stat_init(&jb->jb_burst);
+ 
+-    pjmedia_jbuf_set_discard(jb, PJMEDIA_JB_DISCARD_PROGRESSIVE);
++    pjmedia_jbuf_set_discard(jb, PJMEDIA_JB_DISCARD_PROGRESSIVE);
+     pjmedia_jbuf_reset(jb);
+ 
+     *p_jb = jb;

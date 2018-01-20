@@ -1,0 +1,11 @@
+--- pjsip/src/pjsua-lib/pjsua_call.c	2017-01-19 05:31:38.000000000 -0500
++++ pjsip/src/pjsua-lib/pjsua_call.c	2017-04-22 11:52:35.000000000 -0400
+@@ -3378,7 +3378,7 @@ static pj_bool_t check_ice_complete(pjsu
+ 		pj_sockaddr_cmp(&tpinfo.sock_info.rtp_addr_name,
+ 				&call_med->rtp_addr))
+ 	    {
+-		ice_need_reinv = PJ_TRUE;
++		// ice_need_reinv = PJ_TRUE;
+ 	    }
+ 	}
+     }
